@@ -1,0 +1,77 @@
+import { useEffect, useState } from "react";
+import { IconButton, Box, Typography, Tooltip } from "@mui/material";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import { addFavorite, removeFavoriteByProduct, checkIsFavorited, getFavoriteCount } from "../api/favoritesAPI";
+import { useNavigate } from "react-router-dom";
+
+export default function FavoriteToggle({ productId, size = "medium" }) {
+  const navigate = useNavigate();
+  const [count, setCount] = useState(0);
+  const [isFav, setIsFav] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('token');
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const c = await getFavoriteCount(productId);
+        if (!mounted) return;
+        setCount(Number(c.data?.count ?? c.data ?? 0));
+      } catch (_) {
+        // ignore
+      }
+      if (hasToken) {
+        try {
+          const r = await checkIsFavorited(productId);
+          if (!mounted) return;
+          setIsFav(Boolean(r.data?.favorited ?? r.data));
+        } catch (_) {
+          // ignore
+        }
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [productId, hasToken]);
+
+  const toggle = async () => {
+    if (!hasToken) {
+      navigate('/login');
+      return;
+    }
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (isFav) {
+        await removeFavoriteByProduct(productId);
+        setIsFav(false);
+        setCount((x) => Math.max(0, x - 1));
+      } else {
+        await addFavorite(productId);
+        setIsFav(true);
+        setCount((x) => x + 1);
+      }
+    } catch (_) {
+      // ignore errors for now
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+      <Tooltip title={isFav ? 'إزالة من المفضلة' : 'أضف إلى المفضلة'}>
+        <span>
+          <IconButton color="error" size={size} onClick={toggle} disabled={loading}>
+            {isFav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Typography variant={size === 'small' ? 'body2' : 'body1'}>{count}</Typography>
+    </Box>
+  );
+}
+
