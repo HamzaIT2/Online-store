@@ -9,7 +9,24 @@ export const removeFavoriteByProduct = async (productId) => {
 };
 
 export const getMyFavorites = async () => {
-  return axiosInstance.get("/favorites/my-favorites");
+  const candidates = [
+    "/favorites/my-favorites",
+    "/favorites/me",
+    "/favorites",
+    "/users/me/favorites",
+    "/favorite/my-favorites",
+  ];
+  let lastErr;
+  for (const path of candidates) {
+    try {
+      const res = await axiosInstance.get(path);
+      return res;
+    } catch (e) {
+      lastErr = e;
+      // try next
+    }
+  }
+  throw lastErr || new Error("Favorites endpoint not found");
 };
 
 export const checkIsFavorited = async (productId) => {

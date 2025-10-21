@@ -53,10 +53,13 @@ export default function Filters({ onFilterChange }) {
         v = [Math.min(a, b), Math.max(a, b)];
       }
       const next = { ...prev, [field]: v };
-      onFilterChange(next);
       return next;
     });
   };
+
+  useEffect(() => {
+    onFilterChange(filters);
+  }, [filters, onFilterChange]);
 
   const conditionOptions = [
     { label: t('condition_any'), value: '' },

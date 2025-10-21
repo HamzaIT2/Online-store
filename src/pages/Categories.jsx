@@ -76,7 +76,7 @@ export default function Categories() {
       </Typography>
       <Grid container spacing={3}>
         {items.map((c) => (
-          <Grid item xs={12} sm={6} md={4} key={c.slug} sx={{ display: 'flex' }}>
+          <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={c.slug} sx={{ display: 'flex' }}>
             <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 10px 28px rgba(11,29,57,0.24)', display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
               {/* Image area: navigates to products */}
               <CardActionArea onClick={() => goTo(c.slug)} sx={{ position: 'relative' }}>
@@ -140,7 +140,7 @@ export default function Categories() {
                   handleCloseSubs();
                 };
                 return (
-                  <Grid item xs={12} sm={6} key={id || `${openFor}-${idx}`}>
+                  <Grid item size={{ xs: 12, sm: 6 }} key={id || `${openFor}-${idx}`}>
                     <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 10px 28px rgba(11,29,57,0.24)' }}>
                       <CardActionArea onClick={onClick}>
                         <Box sx={{ p: 3, minHeight: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #e3f2fd 0%, #ffffff 100%)' }}>

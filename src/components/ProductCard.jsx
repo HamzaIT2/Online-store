@@ -1,19 +1,58 @@
-import { Card, CardContent, CardMedia, Typography, Button, Box } from "@mui/material";
+import { Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import FavoriteToggle from "./FavoriteToggle";
 import { t } from "../i18n";
+import axiosInstance from "../api/axiosInstance";
+import { useState } from "react";
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const handleDetails = () => {
     if (product?.productId) navigate(`/products/${product.productId}`);
   };
 
-  const mainImage =
-    product?.images?.find((img) => img.isPrimary)?.imageUrl ||
-    product?.images?.[0]?.imageUrl ||
-    "/placeholder.svg";
+  const handleAddToCart = () => {
+    try {
+      const key = 'cart';
+      const current = JSON.parse(localStorage.getItem(key) || '[]');
+      const img = product?.images?.find((i) => i?.isPrimary) || product?.images?.[0];
+      const imageUrl = img?.imageUrl || img?.url || img?.image_url || null;
+      const minimal = {
+        productId: product?.productId,
+        title: product?.title,
+        price: product?.price,
+        images: imageUrl ? [{ imageUrl }] : [],
+      };
+      // avoid duplicates by productId
+      const exists = current.some((p) => String(p?.productId) === String(minimal?.productId));
+      const next = exists ? current : [...current, minimal];
+      localStorage.setItem(key, JSON.stringify(next));
+      console.log('Added to cart:', minimal);
+      setSnackbarOpen(true);
+    } catch (_) {}
+    setTimeout(() => navigate('/cart'), 600);
+  };
+
+  const apiOrigin = (() => {
+    try { return new URL(axiosInstance.defaults.baseURL).origin; } catch { return ""; }
+  })();
+
+  const resolveImageSrc = () => {
+    const img = product?.images?.find((i) => i?.isPrimary) || product?.images?.[0];
+    let src = img?.imageUrl || img?.url || img?.image_url;
+    if (!src) return "/placeholder.svg";
+    const hasProtocol = /^https?:\/\//i.test(src);
+    if (hasProtocol) return src;
+    // Normalize uploads path to backend origin
+    if (src.startsWith("/uploads") || src.startsWith("uploads/")) {
+      const path = src.startsWith("/") ? src : `/${src}`;
+      return apiOrigin ? `${apiOrigin}${path}` : path;
+    }
+    return src;
+  };
+  const mainImage = resolveImageSrc();
 
   const conditionKeyMap = {
     new: 'condition_new',
@@ -27,6 +66,7 @@ export default function ProductCard({ product }) {
   const conditionLabel = t(conditionKeyMap[product?.condition] || '');
 
   return (
+    <>
     <Card
       sx={{
         borderRadius: 3,
@@ -58,11 +98,18 @@ export default function ProductCard({ product }) {
       </CardContent>
 
       <Box sx={{ textAlign: "center", pb: 2 }}>
-        <Button variant="contained" color="error" onClick={handleDetails}>
-          {t('view_details')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+          <Button variant="contained" color="primary" onClick={handleAddToCart}>{t('add_to_cart') || 'Add to Cart'}</Button>
+          <Button variant="contained" color="error" onClick={handleDetails}>{t('view_details')}</Button>
+        </Box>
       </Box>
     </Card>
+    <Snackbar open={snackbarOpen} autoHideDuration={800} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert onClose={() => setSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
+        {t('added_to_cart') || 'تمت الإضافة إلى السلة'}
+      </Alert>
+    </Snackbar>
+    </>
   );
 }
 

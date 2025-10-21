@@ -87,21 +87,21 @@ export default function Navbar() {
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
             {!token ? (
-              <>
-                <MenuItem onClick={() => { handleCloseProfile(); navigate('/login'); }}>{t('login')}</MenuItem>
-                <MenuItem onClick={() => { handleCloseProfile(); navigate('/register'); }}>{t('register')}</MenuItem>
-              </>
+              [
+                <MenuItem key="login" onClick={() => { handleCloseProfile(); navigate('/login'); }}>{t('login')}</MenuItem>,
+                <MenuItem key="register" onClick={() => { handleCloseProfile(); navigate('/register'); }}>{t('register')}</MenuItem>
+              ]
             ) : (
-              <>
-                <MenuItem onClick={() => { handleCloseProfile(); navigate('/profile'); }}>{t('profile')}</MenuItem>
-                <MenuItem onClick={() => { handleCloseProfile(); navigate('/my-products'); }}>{t('my_products')}</MenuItem>
-                <MenuItem onClick={() => { handleCloseProfile(); navigate('/favorites'); }}>{t('favorites')}</MenuItem>
-                {canSell && (
-                  <MenuItem onClick={() => { handleCloseProfile(); navigate('/add-product'); }}>{t('add_product')}</MenuItem>
-                )}
-                <Divider />
-                <MenuItem onClick={() => { handleCloseProfile(); handleLogout(); }}>{t('logout')}</MenuItem>
-              </>
+              [
+                <MenuItem key="profile" onClick={() => { handleCloseProfile(); navigate('/profile'); }}>{t('profile')}</MenuItem>,
+                <MenuItem key="my-products" onClick={() => { handleCloseProfile(); navigate('/my-products'); }}>{t('my_products')}</MenuItem>,
+                <MenuItem key="favorites" onClick={() => { handleCloseProfile(); navigate('/favorites'); }}>{t('favorites')}</MenuItem>,
+                canSell && (
+                  <MenuItem key="add-product" onClick={() => { handleCloseProfile(); navigate('/add-product'); }}>{t('add_product')}</MenuItem>
+                ),
+                <Divider key="divider" />,
+                <MenuItem key="logout" onClick={() => { handleCloseProfile(); handleLogout(); }}>{t('logout')}</MenuItem>,
+              ]
             )}
           </Menu>
 

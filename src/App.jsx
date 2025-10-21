@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CssBaseline, ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material";
 import { useTheme } from "./context/ThemeContext";
 import { getLang } from "./i18n";
@@ -80,9 +80,8 @@ export default function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/favorites" element={<Favorites />} />
 
-          {/* بعدين نضيف
-              <Route path="/my-products" element={<MyProducts />} /> 
-          */}
+          {/* توجيه أي مسار غير معروف إلى الرئيسية */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </MuiThemeProvider>

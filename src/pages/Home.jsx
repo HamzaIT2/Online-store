@@ -14,10 +14,11 @@ export default function Home() {
     category: "",
     province: "",
     condition: "",
-    priceRange: [0, 1000000],
+    priceRange: [1000, 2000000],
   });
 
   const [products, setProducts] = useState([]);
+  const [prevProducts, setPrevProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,7 +58,12 @@ export default function Home() {
             if (catIsId) params.append("categoryId", String(filters.category));
             if (provIsId) params.append("provinceId", String(filters.province));
             if (filters.condition) params.append("condition", filters.condition);
-            if (filters.priceRange) {
+            // Only include price range if user changed it from the default
+            const DEFAULT_PRICE_RANGE = [1000, 2000000];
+            if (
+              Array.isArray(filters.priceRange) &&
+              (filters.priceRange[0] !== DEFAULT_PRICE_RANGE[0] || filters.priceRange[1] !== DEFAULT_PRICE_RANGE[1])
+            ) {
               params.append("minPrice", String(filters.priceRange[0]));
               params.append("maxPrice", String(filters.priceRange[1]));
             }
@@ -102,8 +108,85 @@ export default function Home() {
         }
       }
 
-      const res = await axiosInstance.get(url);
-      setProducts(res.data?.products || []);
+      console.log('Fetching products from:', url);
+      const extractList = (payload) => {
+        if (Array.isArray(payload)) return payload;
+        if (!payload || typeof payload !== 'object') return [];
+        if (Array.isArray(payload.products)) return payload.products;
+        if (Array.isArray(payload.items)) return payload.items;
+        if (Array.isArray(payload.data)) return payload.data;
+        if (Array.isArray(payload.result)) return payload.result;
+        if (Array.isArray(payload.records)) return payload.records;
+        // Fallback: first array property
+        for (const k of Object.keys(payload)) {
+          if (Array.isArray(payload[k])) return payload[k];
+        }
+        return [];
+      };
+      const res = await axiosInstance.get(url, {
+        headers: { 'Cache-Control': 'no-cache' },
+        params: { _ts: Date.now() },
+      });
+      const data = res.data;
+      let list = extractList(data);
+      console.log('Products response shape:', Array.isArray(data) ? 'array' : typeof data, 'count:', list.length);
+
+      // Fallback: if backend filter returns empty, fetch all and filter client-side
+      if (list.length === 0) {
+        const hasAnyFilter =
+          filters.category || filters.province || filters.condition ||
+          (Array.isArray(filters.priceRange) && (filters.priceRange[0] != null || filters.priceRange[1] != null));
+        if (hasAnyFilter) {
+          try {
+            const allRes = await axiosInstance.get('/products', {
+              headers: { 'Cache-Control': 'no-cache' },
+              params: { _ts: Date.now() },
+            });
+            const allData = allRes.data;
+            const all = extractList(allData);
+            const DEFAULT_PRICE_RANGE = [1000, 2000000];
+            const [minP, maxP] = Array.isArray(filters.priceRange) ? filters.priceRange : DEFAULT_PRICE_RANGE;
+            const catId = isNumeric(filters.category) ? Number(filters.category) : null;
+            const provId = isNumeric(filters.province) ? Number(filters.province) : null;
+            list = all.filter((p) => {
+              const pCategoryId = Number(p.categoryId ?? p.categoryID ?? p.category_id);
+              const pProvinceId = Number(p.provinceId ?? p.provinceID ?? p.province_id);
+              const pCondition = String(p.condition ?? p.Condition ?? '');
+              const pPriceNum = Number(p.price ?? p.Price ?? p.unitPrice);
+
+              if (catId != null && Number.isFinite(pCategoryId) && pCategoryId !== catId) return false;
+              if (provId != null && Number.isFinite(pProvinceId) && pProvinceId !== provId) return false;
+              if (filters.condition && pCondition && pCondition !== String(filters.condition)) return false;
+              if (Number.isFinite(pPriceNum)) {
+                if (minP != null && pPriceNum < Number(minP)) return false;
+                if (maxP != null && pPriceNum > Number(maxP)) return false;
+              }
+              return true;
+            });
+            console.log('Client-side filtered count:', list.length);
+          } catch (fallbackErr) {
+            console.warn('Client-side filter fallback failed:', fallbackErr);
+          }
+        }
+      }
+      // If no filters and still empty, try showing all products
+      if (list.length === 0) {
+        try {
+          const allRes = await axiosInstance.get('/products', {
+            headers: { 'Cache-Control': 'no-cache' },
+            params: { _ts: Date.now() },
+          });
+          const all = extractList(allRes.data);
+          if (all.length) list = all;
+        } catch (_) {}
+      }
+      if (res.status === 304) {
+        console.log('Received 304 Not Modified, keeping previous products.');
+        setProducts(prevProducts);
+      } else {
+        setProducts(list);
+        if (list && list.length) setPrevProducts(list);
+      }
     } catch (err) {
       console.error(err);
       setError(t('error_loading_product'));
@@ -118,14 +201,17 @@ export default function Home() {
     const cat = params.get('category');
     const q = params.get('q');
     if (cat) {
-      setFilters((prev) => ({ ...prev, category: cat }));
+      setFilters((prevFilters) => ({ ...prevFilters, category: cat }));
     }
     if (q) {
       // Apply search term from URL for subcategory quick search
       setSearchTerm(q);
     }
+   // loadProducts();[filters, searchTerm,
+  },  [location.search]);
+  useEffect(()=>{
     loadProducts();
-  }, [filters, searchTerm, location.search]);
+  },[filters,searchTerm]);
 
   return (
     <Container sx={{ mt: 4, maxWidth: 'lg' }}>
@@ -144,7 +230,7 @@ export default function Home() {
         <>
           <Grid container spacing={3}>
             {products.map((p) => (
-              <Grid item xs={12} sm={6} md={4} key={p.productId}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={p.productId}>
                 <ProductCard product={p} />
               </Grid>
             ))}
