@@ -214,6 +214,8 @@ export default function AddProduct() {
       }
 
       setSuccess('Product added successfully!');
+      // After successful creation and image upload, navigate to My Products so the new ad is visible
+      setTimeout(() => navigate('/my-products'), 700);
     } catch (err) {
       const d = err.response?.data;
       const msgs = Array.isArray(d?.message)

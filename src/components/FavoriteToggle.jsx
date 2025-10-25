@@ -46,13 +46,31 @@ export default function FavoriteToggle({ productId, size = "medium" }) {
     setLoading(true);
     try {
       if (isFav) {
-        await removeFavoriteByProduct(productId);
+        try {
+          const r = await removeFavoriteByProduct(productId);
+          console.log('removeFavoriteByProduct', productId, 'status=', r?.status);
+        } catch (e) {
+          console.error('removeFavoriteByProduct failed', productId, e?.response?.status, e?.response?.data || e?.message || e);
+          throw e;
+        }
         setIsFav(false);
         setCount((x) => Math.max(0, x - 1));
+        try { window.dispatchEvent(new CustomEvent('favorites:updated', { detail: { productId, action: 'removed' } })); } catch { };
       } else {
-        await addFavorite(productId);
+        try {
+          const r = await addFavorite(productId);
+          console.log('addFavorite response', productId, 'status=', r?.status);
+        } catch (e) {
+          console.error('addFavorite failed for', productId, e?.response?.status, e?.response?.data || e?.message || e);
+          if (e?.response?.status === 401) {
+            navigate('/login');
+            return;
+          }
+          throw e;
+        }
         setIsFav(true);
         setCount((x) => x + 1);
+        try { window.dispatchEvent(new CustomEvent('favorites:updated', { detail: { productId, action: 'added' } })); } catch { };
       }
     } catch (_) {
       // ignore errors for now
@@ -65,7 +83,7 @@ export default function FavoriteToggle({ productId, size = "medium" }) {
     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
       <Tooltip title={isFav ? 'إزالة من المفضلة' : 'أضف إلى المفضلة'}>
         <span>
-          <IconButton color="error" size={size} onClick={toggle} disabled={loading}>
+          <IconButton color="error" size={size} onClick={(e) => { e.stopPropagation(); toggle(); }} disabled={loading}>
             {isFav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
           </IconButton>
         </span>

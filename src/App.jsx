@@ -14,6 +14,7 @@ import CategoryDetails from "./pages/CategoryDetails";
 import AddProduct from "./pages/AddProduct";
 import Cart from "./pages/Cart";
 import Favorites from "./pages/Favorites";
+import Chats from "./pages/Chats";
 // لاحقاً نضيف باقي الصفحات هنا (Register, Home, MyProducts ...)
 
 export default function App() {
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/add-product" element={<AddProduct />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/chats" element={<Chats />} />
 
           {/* توجيه أي مسار غير معروف إلى الرئيسية */}
           <Route path="*" element={<Navigate to="/" replace />} />

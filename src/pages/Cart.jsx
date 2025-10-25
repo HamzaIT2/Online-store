@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Container, Typography, Grid, Card, CardContent, CardMedia, Box, Button } from "@mui/material";
+import axiosInstance from "../api/axiosInstance";
 import { t } from "../i18n";
 
 export default function Cart() {
@@ -22,7 +23,7 @@ export default function Cart() {
       const next = current.filter((p) => String(p?.productId) !== String(productId));
       localStorage.setItem('cart', JSON.stringify(next));
       setItems(next);
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const clearAll = () => {
@@ -45,7 +46,18 @@ export default function Cart() {
         <Grid container spacing={2}>
           {items.map((p) => {
             const img = (p?.images?.find((i) => i?.isPrimary) || p?.images?.[0]) || {};
-            const src = img.imageUrl || img.url || img.image_url || '/placeholder.svg';
+            // try common keys
+            let src = img.imageUrl || img.url || img.image_url || '/placeholder.svg';
+            try {
+              const apiOrigin = new URL(axiosInstance.defaults.baseURL).origin;
+              const hasProtocol = /^https?:\/\//i.test(src);
+              if (!hasProtocol && (src.startsWith('/uploads') || src.startsWith('uploads/'))) {
+                const path = src.startsWith('/') ? src : `/${src}`;
+                src = apiOrigin ? `${apiOrigin}${path}` : path;
+              }
+            } catch (e) {
+              // ignore and use src as-is
+            }
             return (
               <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={p.productId}>
                 <Card>

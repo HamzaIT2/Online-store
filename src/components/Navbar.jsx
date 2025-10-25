@@ -1,11 +1,15 @@
-import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Menu, MenuItem, Avatar } from "@mui/material";
+import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Menu, MenuItem, Avatar, Badge } from "@mui/material";
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import { Brightness4, Brightness7 } from "@mui/icons-material";
 import TranslateIcon from "@mui/icons-material/Translate";
 import AccountCircle from "@mui/icons-material/AccountCircle";
+import { useEffect, useState } from "react";
+import { getMyFavorites } from "../api/favoritesAPI";
 import { Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { t, toggleLang } from "../i18n";
-import { useState } from "react";
+import { listChats } from "../api/messagesAPI";
+import axiosInstance from "../api/axiosInstance";
 
 export default function Navbar() {
   const { darkMode, toggleDarkMode } = useTheme();
@@ -17,6 +21,9 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
 
   const [anchorProfile, setAnchorProfile] = useState(null);
+  const [favCount, setFavCount] = useState(0);
+  const [chatCount, setChatCount] = useState(0);
+  const [profile, setProfile] = useState(null);
   const openProfile = Boolean(anchorProfile);
   const handleOpenProfile = (event) => setAnchorProfile(event.currentTarget);
   const handleCloseProfile = () => setAnchorProfile(null);
@@ -26,10 +33,93 @@ export default function Navbar() {
     navigate('/');
     window.location.reload();
   };
+  const handleAddProductNav = () => {
+    try {
+      const keys = ['token','access_token','jwt','authToken'];
+      let t = null;
+      if (typeof window !== 'undefined') {
+        for (const k of keys) { const v = localStorage.getItem(k); if (v && String(v).trim() && v !== 'null' && v !== 'undefined') { t = v; break; } }
+      }
+      if (t) navigate('/add-product'); else navigate('/login');
+    } catch {
+      navigate('/login');
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const loadCount = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) { if (mounted) setFavCount(0); return; }
+        const res = await getMyFavorites();
+        const data = res && (res.data ?? res) ? (res.data ?? res) : [];
+        let products = [];
+        if (Array.isArray(data)) products = data.map(f => f.product || f).filter(Boolean);
+        else if (Array.isArray(data.items)) products = data.items.map(f => f.product || f).filter(Boolean);
+        else if (Array.isArray(data.data)) products = data.data.map(f => f.product || f).filter(Boolean);
+        if (mounted) setFavCount(products.length);
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadCount();
+    const onUpdated = () => loadCount();
+    window.addEventListener('favorites:updated', onUpdated);
+    return () => { mounted = false; window.removeEventListener('favorites:updated', onUpdated); };
+  }, []);
+
+  // Load chats count for "My Messages" badge
+  useEffect(() => {
+    let mounted = true;
+    const loadChats = async () => {
+      try {
+        if (!token) { if (mounted) setChatCount(0); return; }
+        const res = await listChats();
+        const data = res?.data ?? res;
+        const items = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
+        if (mounted) setChatCount(items.length || 0);
+      } catch (_) {
+        if (mounted) setChatCount(0);
+      }
+    };
+    loadChats();
+    return () => { mounted = false; };
+  }, [token]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadProfile = async () => {
+      try {
+        if (!token) { if (mounted) setProfile(null); return; }
+        const res = await axiosInstance.get('/users/profile');
+        if (mounted) setProfile(res?.data || null);
+      } catch (_) {
+        if (mounted) setProfile(null);
+      }
+    };
+    loadProfile();
+    return () => { mounted = false; };
+  }, [token]);
+
+  const resolveAvatar = () => {
+    if (!profile) return undefined;
+    const img = profile.avatar || profile.avatarUrl || profile.image || profile.photo || profile.picture;
+    if (!img) return undefined;
+    const hasProtocol = /^https?:\/\//i.test(img);
+    if (hasProtocol) return img;
+    try {
+      const origin = new URL(axiosInstance.defaults.baseURL).origin;
+      return origin + (String(img).startsWith('/') ? img : `/${img}`);
+    } catch {
+      return img;
+    }
+  };
 
   return (
+    <>
     <AppBar
-      position="static"
+      position="fixed"
       color="default"
       sx={{
         background: darkMode
@@ -54,6 +144,19 @@ export default function Navbar() {
             variant={isActive('/cart') ? 'contained' : 'text'}
             sx={{ backgroundColor: isActive('/cart') ? 'rgba(255,255,255,0.18)' : 'transparent' }}
           >{t('cart')}</Button>
+          <Button component={RouterLink} to="/my-products" color="inherit"
+            variant={isActive('/my-products') ? 'contained' : 'text'}
+            sx={{ backgroundColor: isActive('/my-products') ? 'rgba(255,255,255,0.18)' : 'transparent' }}
+          >{t('my_products') || 'إعلاناتي'}</Button>
+          <Button component={RouterLink} to="/favorites" color="inherit"
+            variant={isActive('/favorites') ? 'contained' : 'text'}
+            sx={{ backgroundColor: isActive('/favorites') ? 'rgba(255,255,255,0.18)' : 'transparent' }}
+          >
+            <Badge badgeContent={favCount} color="error" overlap="circular">
+              <FavoriteIcon sx={{ color: '#fff', verticalAlign: 'middle', mr: 1 }} />
+            </Badge>
+          </Button>
+          
         </Box>
 
         {/* Center: Site name */}
@@ -61,19 +164,41 @@ export default function Navbar() {
           {t('site_name')}
         </Typography>
 
-        {/* Left: Add Product (if seller) + Profile + Theme + Lang */}
+        {/* Left: Add Product (if seller) + Messages + Profile + Theme + Lang */}
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-          {canSell && (
-            <Button component={RouterLink} to="/add-product" color="inherit" variant={isActive('/add-product') ? 'contained' : 'text'}
-              sx={{ backgroundColor: isActive('/add-product') ? 'rgba(255,255,255,0.18)' : 'transparent' }}>
-              {t('add_product')}
-            </Button>
-          )}
+          <Button onClick={handleAddProductNav} color="inherit" variant={isActive('/add-product') ? 'contained' : 'text'}
+            sx={{ backgroundColor: isActive('/add-product') ? 'rgba(255,255,255,0.18)' : 'transparent' }}>
+            {t('add_product') || 'إضافة إعلان'}
+          </Button>
+
+          {/* My Messages near profile */}
+          <Button component={RouterLink} to="/chats" color="inherit"
+            variant={isActive('/chats') ? 'contained' : 'text'}
+            sx={{ backgroundColor: isActive('/chats') ? 'rgba(255,255,255,0.18)' : 'transparent' }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ color: '#fff' }}>{t('messages') || 'My Messages'}</Typography>
+              {!!chatCount && (
+                <Box sx={{
+                  bgcolor: 'error.main',
+                  color: 'error.contrastText',
+                  px: 1,
+                  lineHeight: 1.6,
+                  borderRadius: 10,
+                  fontSize: 12,
+                  minWidth: 22,
+                  textAlign: 'center'
+                }}>
+                  {chatCount}
+                </Box>
+              )}
+            </Box>
+          </Button>
 
           {/* Profile menu icon */}
           <IconButton color="inherit" onClick={handleOpenProfile} size="small" aria-haspopup="true" aria-controls={openProfile ? 'profile-menu' : undefined}>
             {token ? (
-              <Avatar sx={{ width: 28, height: 28, bgcolor: 'rgba(255,255,255,0.2)' }}>P</Avatar>
+              <Avatar src={resolveAvatar()} sx={{ width: 28, height: 28, bgcolor: 'rgba(255,255,255,0.2)' }}>P</Avatar>
             ) : (
               <AccountCircle />
             )}
@@ -96,6 +221,7 @@ export default function Navbar() {
                 <MenuItem key="profile" onClick={() => { handleCloseProfile(); navigate('/profile'); }}>{t('profile')}</MenuItem>,
                 <MenuItem key="my-products" onClick={() => { handleCloseProfile(); navigate('/my-products'); }}>{t('my_products')}</MenuItem>,
                 <MenuItem key="favorites" onClick={() => { handleCloseProfile(); navigate('/favorites'); }}>{t('favorites')}</MenuItem>,
+                <MenuItem key="chats" onClick={() => { handleCloseProfile(); navigate('/chats'); }}>{t('my_messages') || 'My Messages'}</MenuItem>,
                 canSell && (
                   <MenuItem key="add-product" onClick={() => { handleCloseProfile(); navigate('/add-product'); }}>{t('add_product')}</MenuItem>
                 ),
@@ -115,6 +241,8 @@ export default function Navbar() {
         </Box>
       </Toolbar>
     </AppBar>
+    <Toolbar />
+    </>
   );
 }
 

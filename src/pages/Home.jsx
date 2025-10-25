@@ -36,39 +36,41 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      let url = "/products";
-
+      // Build endpoint + params instead of concatenating query into URL string.
+      let endpoint = "/products";
       const isNumeric = (v) => v !== undefined && v !== null && /^\d+$/.test(String(v));
       const trimmedSearch = searchTerm.trim();
+      const params = { _ts: Date.now() };
 
       if (trimmedSearch) {
-        url = `/products/search?q=${encodeURIComponent(trimmedSearch)}`;
+        // Primary attempt: ask backend to filter by q param on /products/search or /products
+        endpoint = "/products/search";
+        params.q = trimmedSearch;
       } else {
         const hasAnyFilter =
           filters.category || filters.province || filters.condition ||
           (Array.isArray(filters.priceRange) && (filters.priceRange[0] != null || filters.priceRange[1] != null));
 
         if (hasAnyFilter) {
-          const params = new URLSearchParams();
           const catIsId = isNumeric(filters.category);
           const provIsId = isNumeric(filters.province);
 
           if (catIsId || provIsId || filters.condition || filters.priceRange) {
-            url = "/products/filter";
-            if (catIsId) params.append("categoryId", String(filters.category));
-            if (provIsId) params.append("provinceId", String(filters.province));
-            if (filters.condition) params.append("condition", filters.condition);
+            endpoint = "/products/filter";
+            if (catIsId) params.categoryId = String(filters.category);
+            // support numeric province ids or string slugs (e.g. 'p-baghdad')
+            if (provIsId) params.provinceId = String(filters.province);
+            else if (filters.province) params.province = String(filters.province);
+            if (filters.condition) params.condition = filters.condition;
             // Only include price range if user changed it from the default
             const DEFAULT_PRICE_RANGE = [1000, 2000000];
             if (
               Array.isArray(filters.priceRange) &&
               (filters.priceRange[0] !== DEFAULT_PRICE_RANGE[0] || filters.priceRange[1] !== DEFAULT_PRICE_RANGE[1])
             ) {
-              params.append("minPrice", String(filters.priceRange[0]));
-              params.append("maxPrice", String(filters.priceRange[1]));
+              params.minPrice = String(filters.priceRange[0]);
+              params.maxPrice = String(filters.priceRange[1]);
             }
-            const qs = params.toString();
-            if (qs) url += `?${qs}`;
           } else {
             // Fallback: if using string slugs (from static lists), search by keywords
             const categoryMap = {
@@ -103,12 +105,17 @@ export default function Home() {
             if (filters.category && categoryMap[filters.category]) parts.push(categoryMap[filters.category]);
             if (filters.province && provinceMap[filters.province]) parts.push(provinceMap[filters.province]);
             const q = parts.join(' ');
-            url = q ? `/products/search?q=${encodeURIComponent(q)}` : "/products";
+            if (q) {
+              endpoint = "/products/search";
+              params.q = q;
+            } else {
+              endpoint = "/products";
+            }
           }
         }
       }
 
-      console.log('Fetching products from:', url);
+      console.log('Fetching products from endpoint:', endpoint, 'params:', params, 'searchTerm:', trimmedSearch);
       const extractList = (payload) => {
         if (Array.isArray(payload)) return payload;
         if (!payload || typeof payload !== 'object') return [];
@@ -123,13 +130,125 @@ export default function Home() {
         }
         return [];
       };
-      const res = await axiosInstance.get(url, {
-        headers: { 'Cache-Control': 'no-cache' },
-        params: { _ts: Date.now() },
-      });
-      const data = res.data;
-      let list = extractList(data);
-      console.log('Products response shape:', Array.isArray(data) ? 'array' : typeof data, 'count:', list.length);
+      const normalizeCondition = (p) => {
+        const raw = (
+          p.condition ?? p.Condition ?? p.conditionCode ?? p.condition_key ??
+          p.conditionLabel ?? p.condition_ar ?? p.conditionAr ?? p.condition_en ?? ''
+        );
+        const s = String(raw).trim().toLowerCase();
+        if (!s) return '';
+        // direct codes
+        if (["new","like_new","good","fair","poor"].includes(s)) return s;
+        // english variants
+        if (s.includes('like') && s.includes('new')) return 'like_new';
+        if (s.includes('good')) return 'good';
+        if (s.includes('fair') || s.includes('average')) return 'fair';
+        if (s.includes('poor') || s.includes('bad')) return 'poor';
+        if (s.includes('new')) return 'new';
+        // arabic variants
+        if (s.includes('مثل') && s.includes('الجديد')) return 'like_new';
+        if (s.includes('جيد')) return 'good';
+        if (s.includes('متوسط') || s.includes('مقبول')) return 'fair';
+        if (s.includes('سيئ') || s.includes('سيء') || s.includes('سيئة')) return 'poor';
+        if (s.includes('جديد')) return 'new';
+        return '';
+      };
+      const matchProvince = (product, provFilter) => {
+        if (!provFilter) return true;
+        const pf = String(provFilter).toLowerCase();
+        // if numeric filter, compare numeric province id fields
+        if (/^\d+$/.test(pf)) {
+          const num = Number(pf);
+          const candidates = [product.provinceId, product.provinceID, product.province_id, product.location && product.location.provinceId, product.province && product.province.provinceId];
+          for (const c of candidates) {
+            if (c == null) continue;
+            if (String(c) === String(num)) return true;
+            if (/^\d+$/.test(String(c)) && Number(c) === num) return true;
+          }
+          return false;
+        }
+        // string filter: match slug, name, or embedded objects
+        const candidates = [
+          product.province, product.provinceName, product.provinceNameAr, product.province_slug,
+          product.location && product.location.province, product.location && product.location.provinceSlug,
+          product.address && product.address.province,
+          product.province && (product.province.slug || product.province.name || product.province.nameAr || product.province.provinceId),
+          product.provinceId, product.provinceID, product.province_id,
+        ].filter(Boolean).map(x => String(x).toLowerCase());
+        return candidates.some(c => c === pf || c.includes(pf));
+      };
+      let res;
+      let data;
+      let list = [];
+      try {
+        res = await axiosInstance.get(endpoint, {
+          headers: { 'Cache-Control': 'no-cache' },
+          params,
+        });
+        data = res.data;
+        list = extractList(data);
+        console.log('Products response shape:', Array.isArray(data) ? 'array' : typeof data, 'count:', list.length);
+      } catch (reqErr) {
+        console.error('Product fetch failed for', url, reqErr?.response?.status, reqErr?.message || reqErr);
+        // If server error (5xx) or other failure while searching, try alternative search endpoints if search term exists
+        if (trimmedSearch) {
+          const q = encodeURIComponent(trimmedSearch);
+          const candidates = [
+            `/products?q=${q}`,
+            `/products?search=${q}`,
+            `/products/search?keyword=${q}`,
+            `/products/search?query=${q}`,
+          ];
+          for (const cand of candidates) {
+            try {
+              console.log('Trying alternative search endpoint due to error:', cand);
+              // alt candidate expressed as path string; try it with same params where possible
+              const altParams = { _ts: Date.now() };
+              // If candidate includes query param already, let axios use the string path; otherwise pass params
+              const altRes = await (cand.includes('?')
+                ? axiosInstance.get(cand, { headers: { 'Cache-Control': 'no-cache' } })
+                : axiosInstance.get(cand, { headers: { 'Cache-Control': 'no-cache' }, params: altParams }));
+              const altList = extractList(altRes.data);
+              console.log('Alt endpoint', cand, 'returned', altList.length);
+              if (altList && altList.length) {
+                list = altList;
+                break;
+              }
+            } catch (altErr) {
+              console.warn('Alt search failed for', cand, altErr?.response?.status, altErr?.message || altErr);
+            }
+          }
+        }
+        // if still empty, rethrow to be handled by outer catch
+      }
+
+      // If user searched but the primary endpoint returned empty, try common alternative endpoints/param names
+      if ((list.length === 0) && trimmedSearch) {
+        const q = encodeURIComponent(trimmedSearch);
+        const candidates = [
+          `/products?q=${q}`,
+          `/products?search=${q}`,
+          `/products/search?keyword=${q}`,
+          `/products/search?query=${q}`,
+        ];
+        for (const cand of candidates) {
+          try {
+            console.log('Trying alternative search endpoint:', cand);
+            const altParams = { _ts: Date.now(), q: trimmedSearch };
+            const altRes = await (cand.includes('?')
+              ? axiosInstance.get(cand, { headers: { 'Cache-Control': 'no-cache' } })
+              : axiosInstance.get(cand, { headers: { 'Cache-Control': 'no-cache' }, params: altParams }));
+            const altList = extractList(altRes.data);
+            console.log('Alt endpoint', cand, 'returned', altList.length);
+            if (altList && altList.length) {
+              list = altList;
+              break;
+            }
+          } catch (e) {
+            console.warn('Alt search failed for', cand, e?.message || e);
+          }
+        }
+      }
 
       // Fallback: if backend filter returns empty, fetch all and filter client-side
       if (list.length === 0) {
@@ -148,18 +267,43 @@ export default function Home() {
             const [minP, maxP] = Array.isArray(filters.priceRange) ? filters.priceRange : DEFAULT_PRICE_RANGE;
             const catId = isNumeric(filters.category) ? Number(filters.category) : null;
             const provId = isNumeric(filters.province) ? Number(filters.province) : null;
+            const provFilter = filters.province; // could be slug like 'p-baghdad' or numeric id
+            const parseNumber = (v) => {
+              if (v == null) return NaN;
+              if (typeof v === 'number') return v;
+              // remove commas, currency symbols and spaces
+              const s = String(v).replace(/[^0-9.-]+/g, '');
+              return s === '' ? NaN : Number(s);
+            };
+            const minNum = parseNumber(minP);
+            const maxNum = parseNumber(maxP);
             list = all.filter((p) => {
-              const pCategoryId = Number(p.categoryId ?? p.categoryID ?? p.category_id);
-              const pProvinceId = Number(p.provinceId ?? p.provinceID ?? p.province_id);
+              const pCategoryId = parseNumber(p.categoryId ?? p.categoryID ?? p.category_id);
+              const pProvinceId = parseNumber(p.provinceId ?? p.provinceID ?? p.province_id);
               const pCondition = String(p.condition ?? p.Condition ?? '');
-              const pPriceNum = Number(p.price ?? p.Price ?? p.unitPrice);
+              const pPriceNum = parseNumber(p.price ?? p.Price ?? p.unitPrice ?? p.amount);
 
               if (catId != null && Number.isFinite(pCategoryId) && pCategoryId !== catId) return false;
-              if (provId != null && Number.isFinite(pProvinceId) && pProvinceId !== provId) return false;
+
+              // province filtering: support numeric id OR slug/name
+              if (provId != null) {
+                if (Number.isFinite(pProvinceId) && pProvinceId !== provId) return false;
+              } else if (provFilter) {
+                const pf = String(provFilter).toLowerCase();
+                const candidates = [
+                  p.province, p.provinceName, p.provinceNameAr, p.province_slug,
+                  p.provinceId, p.provinceID, p.province_id,
+                  p.location && p.location.province, p.location && p.location.provinceId,
+                  p.province && p.province.provinceId, p.province && p.province.slug, p.province && p.province.name,
+                ].filter(Boolean).map(x => String(x).toLowerCase());
+                const match = candidates.some(c => c === pf || c.includes(pf));
+                if (!match) return false;
+              }
+
               if (filters.condition && pCondition && pCondition !== String(filters.condition)) return false;
               if (Number.isFinite(pPriceNum)) {
-                if (minP != null && pPriceNum < Number(minP)) return false;
-                if (maxP != null && pPriceNum > Number(maxP)) return false;
+                if (Number.isFinite(minNum) && pPriceNum < minNum) return false;
+                if (Number.isFinite(maxNum) && pPriceNum > maxNum) return false;
               }
               return true;
             });
@@ -178,8 +322,17 @@ export default function Home() {
           });
           const all = extractList(allRes.data);
           if (all.length) list = all;
-        } catch (_) {}
+        } catch (_) { }
       }
+      // apply strict province filter client-side if user selected a province slug/id
+      if (filters.province) {
+        list = list.filter(p => matchProvince(p, filters.province));
+      }
+      // always enforce condition filter client-side (backend may ignore it)
+      if (filters.condition) {
+        list = list.filter(p => normalizeCondition(p) === String(filters.condition));
+      }
+
       if (res.status === 304) {
         console.log('Received 304 Not Modified, keeping previous products.');
         setProducts(prevProducts);
@@ -207,11 +360,11 @@ export default function Home() {
       // Apply search term from URL for subcategory quick search
       setSearchTerm(q);
     }
-   // loadProducts();[filters, searchTerm,
-  },  [location.search]);
-  useEffect(()=>{
+    // loadProducts();[filters, searchTerm,
+  }, [location.search]);
+  useEffect(() => {
     loadProducts();
-  },[filters,searchTerm]);
+  }, [filters, searchTerm]);
 
   return (
     <Container sx={{ mt: 4, maxWidth: 'lg' }}>

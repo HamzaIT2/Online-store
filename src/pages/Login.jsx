@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Container, TextField, Button, Typography, Box } from "@mui/material";
+import { Container, TextField, Button, Typography, Box, InputAdornment, IconButton } from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { loginUser } from "../api/authAPI";
 import { t } from "../i18n";
 
@@ -7,6 +9,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -14,7 +17,7 @@ export default function Login() {
       const res = await loginUser({ email, password });
       localStorage.setItem("token", res.data.token);
       if (!localStorage.getItem('userType')) {
-        try { localStorage.setItem('userType', 'buyer'); } catch {}
+        try { localStorage.setItem('userType', 'buyer'); } catch { }
       }
       window.location.href = "/";
     } catch (err) {
@@ -38,10 +41,19 @@ export default function Login() {
         <TextField
           fullWidth
           label={t('login_password')}
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           sx={{ mb: 3 }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword((v) => !v)} edge="end" aria-label="toggle password visibility">
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         {error && <Typography color="error">{error}</Typography>}
         <Button type="submit" variant="contained" fullWidth>
