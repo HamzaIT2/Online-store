@@ -7,10 +7,12 @@ const isProd = import.meta.env.PROD;
 //  resolvedBaseURL = "https://al-dawaar-backend.onrender.com/api/v1";
 //}
 
-const axiosInstance = axios.get({
-  baseURL: import.meta.env.VITE_API_BASE_URL||"https://al-dawaar-backend.onrender.com/api/v1",
- // baseURL: process.env.REACT_APP_API_URL
-  //baseURL: "https://al-dawaar-backend.onrender.com/api/v1",
+const axiosInstance = axios.create({
+  baseURL:
+    import.meta.env.VITE_API_BASE_URL ||
+    "https://al-dawaar-backend.onrender.com/api/v1",
+  // baseURL: process.env.REACT_APP_API_URL
+  // baseURL: "https://al-dawaar-backend.onrender.com/api/v1",
 });
 
 axiosInstance.interceptors.request.use((config) => {
