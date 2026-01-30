@@ -23,12 +23,16 @@ export default function Cart() {
       const next = current.filter((p) => String(p?.productId) !== String(productId));
       localStorage.setItem('cart', JSON.stringify(next));
       setItems(next);
+      // Trigger cart update event
+      window.dispatchEvent(new Event('cart:updated'));
     } catch (_) { }
   };
 
   const clearAll = () => {
     localStorage.removeItem('cart');
     setItems([]);
+    // Trigger cart update event
+    window.dispatchEvent(new Event('cart:updated'));
   };
 
   return (

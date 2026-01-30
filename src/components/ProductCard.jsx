@@ -1,32 +1,62 @@
 import { Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert, Rating } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import FavoriteToggle from "./FavoriteToggle";
+import ProductCardChatButton from "./ProductCardChatButton";
 import { t } from "../i18n";
 import axiosInstance from "../api/axiosInstance";
-import { useState } from "react";
-import { createOrGetChat } from "../api/messagesAPI";
+import { useState, useEffect } from "react";
+
+// Get current language
+const getCurrentLang = () => {
+  try {
+    return localStorage.getItem('lang') || 'ar';
+  } catch {
+    return 'ar';
+  }
+};
+
+// Province fallback data with multilingual support
+const PROVINCE_FALLBACKS = {
+  'p-baghdad': { ar: 'بغداد', en: 'Baghdad' },
+  'p-basra': { ar: 'البصرة', en: 'Basra' },
+  'p-ninawa': { ar: 'نينوى', en: 'Nineveh' },
+  'p-erbil': { ar: 'أربيل', en: 'Erbil' },
+  'p-sulaymaniyah': { ar: 'السليمانية', en: 'Sulaymaniyah' },
+  'p-dohuk': { ar: 'دهوك', en: 'Dohuk' },
+  'p-karbala': { ar: 'كربلاء', en: 'Karbala' },
+  'p-najaf': { ar: 'النجف', en: 'Najaf' },
+  'p-babil': { ar: 'بابل', en: 'Babil' },
+  'p-wasit': { ar: 'واسط', en: 'Wasit' },
+  'p-dhiqar': { ar: 'ذي قار', en: 'Dhi Qar' },
+  'p-maysan': { ar: 'ميسان', en: 'Maysan' },
+  'p-diwaniya': { ar: 'الديوانية', en: 'Diwaniya' },
+  'p-kirkuk': { ar: 'كركوك', en: 'Kirkuk' },
+  'p-diyala': { ar: 'ديالى', en: 'Diyala' },
+  'p-anbar': { ar: 'الأنبار', en: 'Anbar' },
+  'p-salah': { ar: 'صلاح الدين', en: 'Salah ad Din' },
+  'p-muthanna': { ar: 'المثنى', en: 'Muthanna' },
+};
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      // Force re-render to update province name
+      forceUpdate({});
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => {
+      window.removeEventListener('languageChanged', handleLanguageChange);
+    };
+  }, []);
 
   const handleDetails = () => {
     if (product?.productId) navigate(`/products/${product.productId}`);
-  };
-
-  const handleContactSeller = async (e) => {
-    e.stopPropagation();
-    try {
-      const sellerId = product?.sellerId || product?.userId || product?.ownerId || product?.seller?.id || product?.user?.id;
-      if (!sellerId) { navigate('/chats'); return; }
-      const res = await createOrGetChat({ sellerId, productId: product?.productId });
-      const payload = res?.data ?? res;
-      const chat = payload?.data ?? payload ?? {};
-      const chatId = chat?.id || chat?.chatId || payload?.id || payload?.chatId;
-      if (chatId) navigate(`/chats?chatId=${chatId}`); else navigate('/chats');
-    } catch (_) {
-      navigate('/chats');
-    }
   };
 
   const handleAddToCart = () => {
@@ -46,6 +76,8 @@ export default function ProductCard({ product }) {
       const next = exists ? current : [...current, minimal];
       localStorage.setItem(key, JSON.stringify(next));
       console.log('Added to cart:', minimal);
+      // Trigger cart update event
+      window.dispatchEvent(new Event('cart:updated'));
       setSnackbarOpen(true);
     } catch (_) { }
     setTimeout(() => navigate('/cart'), 600);
@@ -78,7 +110,38 @@ export default function ProductCard({ product }) {
     poor: 'condition_poor',
   };
 
-  const provinceName = product?.province?.nameAr || product?.province?.name || "";
+  // Get province name with multilingual support
+  const getProvinceName = () => {
+    const currentLang = getCurrentLang();
+
+    // Try to get province name from product data
+    let provinceId = product?.provinceId || product?.province?.provinceId || product?.province?.id;
+    let provinceName = '';
+
+    // If we have province data with multilingual names
+    if (product?.province) {
+      provinceName = currentLang === 'ar' ?
+        (product.province.nameAr || product.province.name || product.province.nameEn) :
+        (product.province.nameEn || product.province.name || product.province.nameAr);
+    }
+
+    // If no province name but we have provinceId, use fallback
+    if (!provinceName && provinceId) {
+      const key = String(provinceId);
+      provinceName = PROVINCE_FALLBACKS[key]?.[currentLang] || PROVINCE_FALLBACKS[key]?.ar || '';
+    }
+
+    // Final fallback: try to extract from any province field
+    if (!provinceName && product?.province) {
+      provinceName = currentLang === 'ar' ?
+        (product.province.nameAr || product.province.name) :
+        (product.province.nameEn || product.province.name);
+    }
+
+    return provinceName;
+  };
+
+  const provinceName = getProvinceName();
   const conditionLabel = t(conditionKeyMap[product?.condition] || '');
 
   return (
@@ -124,10 +187,14 @@ export default function ProductCard({ product }) {
         </CardContent>
 
         <Box sx={{ textAlign: "center", pb: 2 }}>
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button variant="contained" color="primary" onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>{t('add_to_cart') || 'Add to Cart'}</Button>
             <Button variant="contained" color="error" onClick={(e) => { e.stopPropagation(); handleDetails(); }}>{t('view_details')}</Button>
-            <Button variant="outlined" color="primary" onClick={handleContactSeller}>{t('contact_seller') || 'تواصل مع البائع'}</Button>
+            <ProductCardChatButton
+              sellerId={product?.userId || product?.sellerId}
+              productId={product?.id || product?.productId}
+              productName={product?.title}
+            />
           </Box>
         </Box>
       </Card>

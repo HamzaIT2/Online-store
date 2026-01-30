@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Divider, TextField, IconButton, Paper } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
 import ImageIcon from '@mui/icons-material/Image';
@@ -7,11 +7,12 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import ChatList from "../components/ChatList";
 import ChatThread from "../components/ChatThread";
-import { listChats, getChatMessages, sendMessage } from "../api/messagesAPI";
+import { listChats, getChatMessages, sendMessage, findExistingChat, createOrGetChat } from "../api/messagesAPI";
 import axiosInstance from "../api/axiosInstance";
 
 export default function Chats() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [chats, setChats] = useState([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [errorChats, setErrorChats] = useState("");
@@ -25,6 +26,51 @@ export default function Chats() {
   const [draft, setDraft] = useState("");
   const [uploading, setUploading] = useState(false);
   const unreadCountMap = useMemo(() => ({}), []);
+
+  // Start or continue conversation
+  const startConversation = async (sellerId, productId) => {
+    try {
+      const currentUserId = localStorage.getItem('userId');
+
+      if (!currentUserId) {
+        console.error('No current user found');
+        return;
+      }
+
+      // First try to find existing chat
+      const existingChatResponse = await findExistingChat(currentUserId, sellerId, productId);
+
+      if (existingChatResponse.data && existingChatResponse.data.conversationId) {
+        // Open existing conversation
+        setCurrentChat(existingChatResponse.data);
+        loadMessages(existingChatResponse.data.conversationId);
+      } else {
+        // Create new conversation
+        const newChatResponse = await createOrGetChat({ sellerId, productId });
+        setCurrentChat(newChatResponse.data);
+        loadMessages(newChatResponse.data.conversationId);
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      setErrorChats('فشل في بدء المحادثة');
+    }
+  };
+
+  // Load messages for a specific chat
+  const loadMessages = async (chatId) => {
+    setLoadingMsgs(true);
+    setErrorMsgs("");
+    try {
+      const res = await getChatMessages(chatId);
+      const data = res?.data ?? res;
+      const rows = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
+      setMessages(rows);
+    } catch (e) {
+      setErrorMsgs("Failed to load messages");
+    } finally {
+      setLoadingMsgs(false);
+    }
+  };
 
   // Load current user id for alignment/context
   useEffect(() => {
@@ -66,21 +112,12 @@ export default function Chats() {
 
   useEffect(() => {
     const loadMsgs = async () => {
-      if (!currentChat?.id) return;
-      setLoadingMsgs(true);
-      try {
-        const res = await getChatMessages(currentChat.id, { limit: 50 });
-        const data = res?.data ?? res;
-        const rows = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
-        setMessages(Array.isArray(rows) ? rows : []);
-      } catch (e) {
-        setErrorMsgs('Failed to load messages');
-      } finally {
-        setLoadingMsgs(false);
-      }
+      if (!currentChat?.id && !currentChat?.conversationId) return;
+      const chatId = currentChat?.id || currentChat?.conversationId;
+      await loadMessages(chatId);
     };
     loadMsgs();
-  }, [currentChat?.id]);
+  }, [currentChat]);
 
   const handleSend = async () => {
     const text = draft.trim();
@@ -106,9 +143,9 @@ export default function Chats() {
         try {
           const res = await sendMessage(currentChat.id, { type: 'text', text: url });
           const saved = (res?.data?.data ?? res?.data ?? res) || null; if (saved && typeof saved === 'object') setMessages((m) => [...m, saved]);
-        } catch (_) {}
+        } catch (_) { }
       });
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const tryUpload = async (file) => {
@@ -147,6 +184,8 @@ export default function Chats() {
   };
 
   return (
+
+
     <Box sx={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 2, p: 2 }}>
       <Paper variant="outlined" sx={{ height: 'calc(100vh - 120px)', overflow: 'hidden' }}>
         <ChatList chats={chats} loading={loadingChats} error={errorChats} selectedId={currentChat?.id} onSelect={setCurrentChat} unreadCountMap={unreadCountMap} />

@@ -7,12 +7,12 @@ import { t } from "../i18n";
 
 // Always-visible fallback tiles
 const FALLBACK_TILES = [
-  { slug: 'c-electronics', title: 'إلكترونيات', image: '/cat-electronics.svg', subs: ['هواتف وملحقاتها','حواسيب ولابتوبات','سماعات وساعات ذكية','أجهزة منزلية'] },
-  { slug: 'c-furniture',  title: 'أثاث وديكور',  image: '/cat-furniture.svg',  subs: ['غرف نوم','غرف جلوس','مكاتب وكراسي','ديكورات منزلية'] },
-  { slug: 'c-clothes',    title: 'ملابس وأزياء', image: '/cat-clothes.svg',    subs: ['رجالي','نسائي','أطفال','أحذية وحقائب','إكسسوارات وساعات'] },
-  { slug: 'c-beauty',     title: 'جمال وصحة',    image: '/cat-beauty.svg',     subs: ['مستحضرات تجميل','عطور','أجهزة عناية (سيشوار، ليزر، ...)'] },
-  { slug: 'c-hobbies',    title: 'أدوات وهوايات', image: '/cat-hobbies.svg',   subs: ['رياضة ولياقة','أدوات موسيقية','كتب ومستلمات دراسة','ألعاب وهدايا'] },
-  { slug: 'c-auto',       title: 'سيارات وملحقاتها', image: '/cat-auto.svg',  subs: ['سيارات مستعملة','دراجات','قطع غيار','إكسسوارات السيارات'] },
+  { slug: 'c-electronics', title: 'إلكترونيات', image: '/cat-electronics.svg', subs: ['هواتف وملحقاتها', 'حواسيب ولابتوبات', 'سماعات وساعات ذكية', 'أجهزة منزلية'] },
+  { slug: 'c-furniture', title: 'أثاث وديكور', image: '/cat-furniture.svg', subs: ['غرف نوم', 'غرف جلوس', 'مكاتب وكراسي', 'ديكورات منزلية'] },
+  { slug: 'c-clothes', title: 'ملابس وأزياء', image: '/cat-clothes.svg', subs: ['رجالي', 'نسائي', 'أطفال', 'أحذية وحقائب', 'إكسسوارات وساعات'] },
+  { slug: 'c-beauty', title: 'جمال وصحة', image: '/cat-beauty.svg', subs: ['مستحضرات تجميل', 'عطور', 'أجهزة عناية (سيشوار، ليزر، ...)'] },
+  { slug: 'c-hobbies', title: 'أدوات وهوايات', image: '/cat-hobbies.svg', subs: ['رياضة ولياقة', 'أدوات موسيقية', 'كتب ومستلمات دراسة', 'ألعاب وهدايا'] },
+  { slug: 'c-auto', title: 'سيارات وملحقاتها', image: '/cat-auto.svg', subs: ['سيارات مستعملة', 'دراجات', 'قطع غيار', 'إكسسوارات السيارات'] },
 ];
 
 const imageFor = (name = '') => {
@@ -40,17 +40,24 @@ export default function Categories() {
         const data = Array.isArray(res.data) ? res.data : [];
         if (!mounted) return;
         if (data.length) {
-          const mapped = data.map((c) => ({
-            slug: String(c.categoryId),
-            title: c.nameAr || c.name,
-            image: imageFor(c.nameAr || c.name),
-            subs: Array.isArray(c.subCategories)
-              ? c.subCategories.map((s) => ({ id: String(s.categoryId), name: s.nameAr || s.name }))
-              : [],
-          }));
+          const mapped = data.map((c) => {
+            // جلب الأقسام الفرعية
+            const subCats = Array.isArray(c.subCategories) ? c.subCategories : [];
+            const subs = subCats.length > 0
+              ? subCats.map((s) => ({ id: String(s.categoryId), name: s.nameAr || s.name }))
+              : []; // إذا لم تكن هناك أقسام فرعية من API، استخدم fallback
+
+            return {
+              slug: String(c.categoryId),
+              title: c.nameAr || c.name,
+              image: imageFor(c.nameAr || c.name),
+              subs: subs.length > 0 ? subs : (FALLBACK_TILES.find(ft => ft.title === (c.nameAr || c.name))?.subs || []),
+            };
+          });
           setItems(mapped);
         }
-      } catch (_) {
+      } catch (err) {
+        console.warn('Failed to load categories:', err?.message);
         // keep fallback
       }
     };
@@ -70,17 +77,25 @@ export default function Categories() {
   };
 
   return (
-    <Container sx={{ mt: 4, direction: 'rtl' }}>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 700, textAlign: 'right' }}>
+    <Container sx={{ mt: 4 }}>
+      <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
         {t('categories')}
       </Typography>
-      <Grid container spacing={3}>
+      <Grid container spacing={12}>
         {items.map((c) => (
-          <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={c.slug} sx={{ display: 'flex' }}>
-            <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 10px 28px rgba(11,29,57,0.24)', display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+          <Grid item xs={12} sm={6} md={4} key={c.slug} sx={{ display: 'flex' }}>
+            <Card sx={{
+              borderRadius: 7,
+              overflow: 'hidden',
+              boxShadow: '10px 10px 28px rgba(11,29,57,0.24)',
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              height: '90%'
+            }}>
               {/* Image area: navigates to products */}
               <CardActionArea onClick={() => goTo(c.slug)} sx={{ position: 'relative' }}>
-                <Box sx={{ position: 'relative', width: '100%' }}>
+                <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
                   <Box sx={{ pt: '100%' }} />
                   <Box sx={{ position: 'absolute', inset: 0, backgroundImage: `url(${c.image})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'transform .3s ease', '&:hover': { transform: 'scale(1.02)' } }} />
                 </Box>
@@ -117,7 +132,19 @@ export default function Categories() {
       >
         {(() => {
           const current = items.find((i) => i.slug === openFor);
-          const list = current?.subs || [];
+          let list = current?.subs || [];
+
+          // إذا لم تكن هناك أقسام فرعية، استخدم الـ fallback
+          if (!list || list.length === 0) {
+            const fallbackItem = FALLBACK_TILES.find(ft => ft.slug === openFor);
+            if (fallbackItem && fallbackItem.subs) {
+              list = fallbackItem.subs.map((name, idx) => ({
+                id: `${openFor}-${idx}`,
+                name: typeof name === 'string' ? name : name.name
+              }));
+            }
+          }
+
           if (!list.length) {
             return (
               <Typography variant="body2" color="text.secondary">
@@ -126,7 +153,7 @@ export default function Categories() {
             );
           }
           return (
-            <Grid container spacing={2} sx={{ direction: 'rtl' }}>
+            <Grid container spacing={2} sx={{border:2,borderRadius:2}}>
               {list.map((s, idx) => {
                 const id = typeof s === 'object' && s !== null ? s.id : undefined;
                 const name = typeof s === 'object' && s !== null ? s.name : String(s);

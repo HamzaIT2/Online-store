@@ -3,7 +3,7 @@ import { List, ListItemButton, ListItemText, CircularProgress, Box, Badge, ListI
 import axiosInstance from "../api/axiosInstance";
 
 export default function ChatList({ chats, loading, error, selectedId, onSelect, unreadCountMap }) {
-  useEffect(() => {}, [chats]);
+  useEffect(() => { }, [chats]);
   if (loading) return <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>;
   if (error) return <Box sx={{ p: 2, color: 'error.main' }}>{String(error)}</Box>;
   if (!chats?.length) return <Box sx={{ p: 2 }}>لا توجد محادثات</Box>;
@@ -36,7 +36,7 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
       if (str.startsWith('/')) return origin + str;
       // Common relative paths like "uploads/...", "files/...", "public/..."
       return origin + '/' + str.replace(/^\.\//, '');
-    } catch {}
+    } catch { }
     return candidate;
   };
   return (

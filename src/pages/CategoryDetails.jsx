@@ -5,12 +5,12 @@ import { Container, Grid, Card, CardActionArea, CardContent, Typography, Box, Bu
 import { t } from "../i18n";
 
 const FALLBACK = {
-  'c-electronics': ['هواتف وملحقاتها','حواسيب ولابتوبات','سماعات وساعات ذكية','أجهزة منزلية (خلاطات، مكانس، تلفزيونات...)'],
-  'c-furniture': ['غرف نوم','غرف جلوس','مكاتب وكراسي','ديكورات منزلية'],
-  'c-clothes': ['رجالي','نسائي','أطفال','أحذية وحقائب','إكسسوارات وساعات'],
-  'c-beauty': ['مستحضرات تجميل','عطور','أجهزة عناية (سيشوار، ليزر، ...)'],
-  'c-hobbies': ['رياضة ولياقة','أدوات موسيقية','كتب ومستلمات دراسة','ألعاب وهدايا'],
-  'c-auto': ['سيارات مستعملة','دراجات','قطع غيار','إكسسوارات السيارات'],
+  'c-electronics': ['هواتف وملحقاتها', 'حواسيب ولابتوبات', 'سماعات وساعات ذكية', 'أجهزة منزلية (خلاطات، مكانس، تلفزيونات...)'],
+  'c-furniture': ['غرف نوم', 'غرف جلوس', 'مكاتب وكراسي', 'ديكورات منزلية'],
+  'c-clothes': ['رجالي', 'نسائي', 'أطفال', 'أحذية وحقائب', 'إكسسوارات وساعات'],
+  'c-beauty': ['مستحضرات تجميل', 'عطور', 'أجهزة عناية (سيشوار، ليزر، ...)'],
+  'c-hobbies': ['رياضة ولياقة', 'أدوات موسيقية', 'كتب ومستلمات دراسة', 'ألعاب وهدايا'],
+  'c-auto': ['سيارات مستعملة', 'دراجات', 'قطع غيار', 'إكسسوارات السيارات'],
 };
 
 export default function CategoryDetails() {
@@ -27,9 +27,13 @@ export default function CategoryDetails() {
           const res = await axiosInstance.get(`/categories/${id}`);
           const cat = res.data || {};
           setTitle(cat.nameAr || cat.name || "");
-          setSubs(Array.isArray(cat.subCategories) ? cat.subCategories.map((s) => ({ id: s.categoryId, name: s.nameAr || s.name })) : []);
-          return;
-        } catch (_) {
+          const subsList = Array.isArray(cat.subCategories) ? cat.subCategories.map((s) => ({ id: s.categoryId, name: s.nameAr || s.name })) : [];
+          if (subsList.length > 0) {
+            setSubs(subsList);
+            return;
+          }
+        } catch (err) {
+          console.warn('Failed to load category:', err?.message);
           // fall through to fallback below if any
         }
       }
@@ -37,11 +41,11 @@ export default function CategoryDetails() {
       // Fallback mapping by slug
       setTitle(
         id === 'c-electronics' ? 'إلكترونيات' :
-        id === 'c-furniture' ? 'أثاث وديكور' :
-        id === 'c-clothes' ? 'ملابس وأزياء' :
-        id === 'c-beauty' ? 'جمال وصحة' :
-        id === 'c-hobbies' ? 'أدوات وهوايات' :
-        id === 'c-auto' ? 'سيارات وملحقاتها' : ''
+          id === 'c-furniture' ? 'أثاث وديكور' :
+            id === 'c-clothes' ? 'ملابس وأزياء' :
+              id === 'c-beauty' ? 'جمال وصحة' :
+                id === 'c-hobbies' ? 'أدوات وهوايات' :
+                  id === 'c-auto' ? 'سيارات وملحقاتها' : ''
       );
       const list = FALLBACK[id] || [];
       setSubs(list.map((name, idx) => ({ id: `${id}-${idx}`, name })));

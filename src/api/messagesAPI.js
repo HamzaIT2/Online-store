@@ -8,6 +8,12 @@ export const getChatMessages = async (chatId, params = {}) => {
   return axiosInstance.get(`/chats/${chatId}/messages`, { params });
 };
 
+export const findExistingChat = async (buyerId, sellerId, productId) => {
+  return axiosInstance.get("/chats/find", { 
+    params: { buyerId, sellerId, productId }
+  });
+};
+
 export const createOrGetChat = async ({ sellerId, productId, orderId }) => {
   const payload = {};
   const s = Number(sellerId);

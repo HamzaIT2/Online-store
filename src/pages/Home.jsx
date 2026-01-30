@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import { Container, Grid, Typography, CircularProgress, Card, CardContent, Button, Box } from "@mui/material";
 import { t } from "../i18n";
@@ -8,6 +7,15 @@ import axiosInstance from "../api/axiosInstance";
 import Filters from "../components/Filters";
 import SearchBar from "../components/SearchBar";
 import ProductCard from "../components/ProductCard";
+
+// Get current language
+const getCurrentLang = () => {
+  try {
+    return localStorage.getItem('lang') || 'ar';
+  } catch {
+    return 'ar';
+  }
+};
 
 export default function Home() {
   const [filters, setFilters] = useState({
@@ -82,24 +90,24 @@ export default function Home() {
               'c-hobbies': 'هوايات',
             };
             const provinceMap = {
-              'p-baghdad': 'بغداد',
-              'p-basra': 'البصرة',
-              'p-ninawa': 'نينوى',
-              'p-erbil': 'أربيل',
-              'p-sulaymaniyah': 'السليمانية',
-              'p-dohuk': 'دهوك',
-              'p-karbala': 'كربلاء',
-              'p-najaf': 'النجف',
-              'p-babil': 'بابل',
-              'p-wasit': 'واسط',
-              'p-dhiqar': 'ذي قار',
-              'p-maysan': 'ميسان',
-              'p-diwaniya': 'الديوانية',
-              'p-kirkuk': 'كركوك',
-              'p-diyala': 'ديالى',
-              'p-anbar': 'الأنبار',
-              'p-salah': 'صلاح الدين',
-              'p-muthanna': 'المثنى',
+              'p-baghdad': getCurrentLang() === 'ar' ? 'بغداد' : 'Baghdad',
+              'p-basra': getCurrentLang() === 'ar' ? 'البصرة' : 'Basra',
+              'p-ninawa': getCurrentLang() === 'ar' ? 'نينوى' : 'Nineveh',
+              'p-erbil': getCurrentLang() === 'ar' ? 'أربيل' : 'Erbil',
+              'p-sulaymaniyah': getCurrentLang() === 'ar' ? 'السليمانية' : 'Sulaymaniyah',
+              'p-dohuk': getCurrentLang() === 'ar' ? 'دهوك' : 'Dohuk',
+              'p-karbala': getCurrentLang() === 'ar' ? 'كربلاء' : 'Karbala',
+              'p-najaf': getCurrentLang() === 'ar' ? 'النجف' : 'Najaf',
+              'p-babil': getCurrentLang() === 'ar' ? 'بابل' : 'Babil',
+              'p-wasit': getCurrentLang() === 'ar' ? 'واسط' : 'Wasit',
+              'p-dhiqar': getCurrentLang() === 'ar' ? 'ذي قار' : 'Dhi Qar',
+              'p-maysan': getCurrentLang() === 'ar' ? 'ميسان' : 'Maysan',
+              'p-diwaniya': getCurrentLang() === 'ar' ? 'الديوانية' : 'Diwaniya',
+              'p-kirkuk': getCurrentLang() === 'ar' ? 'كركوك' : 'Kirkuk',
+              'p-diyala': getCurrentLang() === 'ar' ? 'ديالى' : 'Diyala',
+              'p-anbar': getCurrentLang() === 'ar' ? 'الأنبار' : 'Anbar',
+              'p-salah': getCurrentLang() === 'ar' ? 'صلاح الدين' : 'Salah ad Din',
+              'p-muthanna': getCurrentLang() === 'ar' ? 'المثنى' : 'Muthanna',
             };
             const parts = [];
             if (filters.category && categoryMap[filters.category]) parts.push(categoryMap[filters.category]);
@@ -111,6 +119,7 @@ export default function Home() {
             } else {
               endpoint = "/products";
             }
+            endpoint = "/products";
           }
         }
       }
@@ -138,7 +147,7 @@ export default function Home() {
         const s = String(raw).trim().toLowerCase();
         if (!s) return '';
         // direct codes
-        if (["new","like_new","good","fair","poor"].includes(s)) return s;
+        if (["new", "like_new", "good", "fair", "poor"].includes(s)) return s;
         // english variants
         if (s.includes('like') && s.includes('new')) return 'like_new';
         if (s.includes('good')) return 'good';
@@ -189,7 +198,7 @@ export default function Home() {
         list = extractList(data);
         console.log('Products response shape:', Array.isArray(data) ? 'array' : typeof data, 'count:', list.length);
       } catch (reqErr) {
-        console.error('Product fetch failed for', url, reqErr?.response?.status, reqErr?.message || reqErr);
+        console.error('Product fetch failed for', endpoint, reqErr?.response?.status, reqErr?.message || reqErr);
         // If server error (5xx) or other failure while searching, try alternative search endpoints if search term exists
         if (trimmedSearch) {
           const q = encodeURIComponent(trimmedSearch);
@@ -279,11 +288,34 @@ export default function Home() {
             const maxNum = parseNumber(maxP);
             list = all.filter((p) => {
               const pCategoryId = parseNumber(p.categoryId ?? p.categoryID ?? p.category_id);
+              const pCategoryName = String(p.categoryName ?? p.category ?? '').toLowerCase();
               const pProvinceId = parseNumber(p.provinceId ?? p.provinceID ?? p.province_id);
               const pCondition = String(p.condition ?? p.Condition ?? '');
               const pPriceNum = parseNumber(p.price ?? p.Price ?? p.unitPrice ?? p.amount);
 
-              if (catId != null && Number.isFinite(pCategoryId) && pCategoryId !== catId) return false;
+              // فلترة الفئة - دعم الـ ID والـ slug والاسم
+              if (filters.category) {
+                const catFilter = String(filters.category).toLowerCase();
+
+                // إذا كانت الفئة رقمية (ID)
+                if (isNumeric(filters.category)) {
+                  const catIdNum = Number(filters.category);
+                  if (!Number.isFinite(pCategoryId) || pCategoryId !== catIdNum) {
+                    return false;
+                  }
+                } else {
+                  // إذا كانت الفئة slug أو اسم
+                  const categoryMatch =
+                    catFilter === p.categoryId?.toString().toLowerCase() ||
+                    catFilter === pCategoryName ||
+                    p.categoryId?.toString().toLowerCase().includes(catFilter) ||
+                    pCategoryName.includes(catFilter);
+
+                  if (!categoryMatch) {
+                    return false;
+                  }
+                }
+              }
 
               // province filtering: support numeric id OR slug/name
               if (provId != null) {
@@ -328,6 +360,26 @@ export default function Home() {
       if (filters.province) {
         list = list.filter(p => matchProvince(p, filters.province));
       }
+
+      // تطبيق فلترة الفئة بشكل صارم على مستوى العميل
+      if (filters.category) {
+        const beforeCount = list.length;
+        list = list.filter(p => {
+          const catFilter = String(filters.category).toLowerCase();
+          const pCategoryId = String(p.categoryId ?? p.categoryID ?? p.category_id ?? '').toLowerCase();
+          const pCategoryName = (p.categoryName ?? p.category ?? '').toLowerCase();
+
+          // إذا كانت الفئة رقمية
+          if (isNumeric(filters.category)) {
+            return pCategoryId === catFilter;
+          }
+
+          // إذا كانت slug أو اسم
+          return pCategoryId.includes(catFilter) || pCategoryName.includes(catFilter) || pCategoryId === catFilter;
+        });
+        console.log(`Filtered by category "${filters.category}": ${beforeCount} → ${list.length} products`);
+      }
+
       // always enforce condition filter client-side (backend may ignore it)
       if (filters.condition) {
         list = list.filter(p => normalizeCondition(p) === String(filters.condition));
@@ -349,25 +401,47 @@ export default function Home() {
   };
 
   useEffect(() => {
+
+
     // Read category from URL (e.g., /?category=c-clothes) and prefill filters
     const params = new URLSearchParams(location.search);
     const cat = params.get('category');
     const q = params.get('q');
+
+    // تحديث الفئة إذا كانت موجودة في URL
     if (cat) {
-      setFilters((prevFilters) => ({ ...prevFilters, category: cat }));
+      setFilters((prevFilters) => {
+        // تحديث الفئة فقط إذا كانت مختلفة عن الحالية
+        if (prevFilters.category !== cat) {
+          return { ...prevFilters, category: cat };
+        }
+        return prevFilters;
+      });
+    } else {
+      // مسح الفئة إذا لم تكن موجودة في URL
+      setFilters((prevFilters) => {
+        if (prevFilters.category !== '') {
+          return { ...prevFilters, category: '' };
+        }
+        return prevFilters;
+      });
     }
+
+    // تحديث مصطلح البحث إذا كان موجوداً في URL
     if (q) {
       // Apply search term from URL for subcategory quick search
       setSearchTerm(q);
+    } else {
+      // مسح مصطلح البحث إذا لم يكن موجوداً
+      setSearchTerm('');
     }
-    // loadProducts();[filters, searchTerm,
   }, [location.search]);
   useEffect(() => {
     loadProducts();
   }, [filters, searchTerm]);
 
   return (
-    <Container sx={{ mt: 4, maxWidth: 'lg' }}>
+    <Container sx={{ mt: 1, maxWidth: 'lg' }}>
       <SearchBar onSearch={setSearchTerm} />
       <Filters onFilterChange={handleFilterChange} />
 
@@ -392,7 +466,7 @@ export default function Home() {
             <Box sx={{ mt: 6 }}>
               <Card>
                 <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('add_product') || 'Add Listing'}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 100 }}>{t('add_product') || 'Add Listing'}</Typography>
                   <Button component={RouterLink} to="/add-product" variant="contained">{t('add_product')}</Button>
                 </CardContent>
               </Card>

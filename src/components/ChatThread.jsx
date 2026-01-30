@@ -48,7 +48,7 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
               }
               if (msgText) break;
             }
-          } catch {}
+          } catch { }
         }
 
         // Normalize uploads path to absolute URL
@@ -57,7 +57,7 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
           try {
             const origin = new URL(axiosInstance.defaults.baseURL).origin;
             finalImg = origin + (finalImg.startsWith('/') ? finalImg : `/${finalImg}`);
-          } catch {}
+          } catch { }
         }
         // If not image, but text contains a URL, make it clickable
         let finalLink = null;
@@ -70,37 +70,38 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
               try {
                 const origin = new URL(axiosInstance.defaults.baseURL).origin;
                 finalLink = origin + (finalLink.startsWith('/') ? finalLink : `/${finalLink}`);
-              } catch {}
+              } catch { }
             }
           }
         }
         return (
-        <Box key={msg.id ?? `${msg.chatId || 'c'}-${msg.createdAt || msg.created_at || 't'}-${idx}`} sx={{
-          display: 'flex', justifyContent: (sender === currentUserId ? 'flex-end' : 'flex-start'), mb: 1
-        }}>
-          <Box sx={{
-            background: (sender === currentUserId ? senderGradient : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)')),
-            color: (sender === currentUserId ? '#fff' : (isDark ? 'rgba(255,255,255,0.9)' : theme.palette.text.primary)),
-            px: 1.4, py: 1,
-            borderRadius: 3,
-            borderTopLeftRadius: (sender === currentUserId ? 12 : 4),
-            borderTopRightRadius: (sender === currentUserId ? 4 : 12),
-            boxShadow: (sender === currentUserId ? '0 4px 10px rgba(20,56,115,0.25)' : '0 2px 8px rgba(0,0,0,0.08)'),
-            maxWidth: '70%'
+          <Box key={msg.id ?? `${msg.chatId || 'c'}-${msg.createdAt || msg.created_at || 't'}-${idx}`} sx={{
+            display: 'flex', justifyContent: (sender === currentUserId ? 'flex-end' : 'flex-start'), mb: 1
           }}>
-            {(msg.type === 'image' || finalImg) ? (
-              <img alt="attachment" src={finalImg} style={{ maxWidth: '100%', borderRadius: 8, pointerEvents: 'none' }} />
-            ) : finalLink ? (
-              <Typography variant="body2"><a href={finalLink} target="_blank" rel="noopener noreferrer">{finalLink}</a></Typography>
-            ) : (
-              <Typography variant="body2">{String(msgText)}</Typography>
-            )}
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              {new Date(ts).toLocaleString()}
-            </Typography>
+            <Box sx={{
+              background: (sender === currentUserId ? senderGradient : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)')),
+              color: (sender === currentUserId ? '#fff' : (isDark ? 'rgba(255,255,255,0.9)' : theme.palette.text.primary)),
+              px: 1.4, py: 1,
+              borderRadius: 3,
+              borderTopLeftRadius: (sender === currentUserId ? 12 : 4),
+              borderTopRightRadius: (sender === currentUserId ? 4 : 12),
+              boxShadow: (sender === currentUserId ? '0 4px 10px rgba(20,56,115,0.25)' : '0 2px 8px rgba(0,0,0,0.08)'),
+              maxWidth: '70%'
+            }}>
+              {(msg.type === 'image' || finalImg) ? (
+                <img alt="attachment" src={finalImg} style={{ maxWidth: '100%', borderRadius: 8, pointerEvents: 'none' }} />
+              ) : finalLink ? (
+                <Typography variant="body2"><a href={finalLink} target="_blank" rel="noopener noreferrer">{finalLink}</a></Typography>
+              ) : (
+                <Typography variant="body2">{String(msgText)}</Typography>
+              )}
+              <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                {new Date(ts).toLocaleString()}
+              </Typography>
+            </Box>
           </Box>
-        </Box>
-      );})}
+        );
+      })}
       <div ref={bottomRef} />
     </Box>
   );

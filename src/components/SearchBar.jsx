@@ -13,17 +13,18 @@ export default function SearchBar({ onSearch }) {
   };
 
   return (
-    <Box sx={{ mb: 3, direction: "rtl" }}>
+
+    <Box sx={{ mb: 1, direction: "rtl" }}>
       <TextField
-        fullWidth
-        variant="outlined"
-        placeholder={t('search_placeholder')}
+        
+        variant="standard"
+        placeholder={t('search') || 'بحث'}
         value={term}
         onChange={handleChange}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <SearchIcon color="action" />
+              <SearchIcon color="primary" />
             </InputAdornment>
           ),
         }}

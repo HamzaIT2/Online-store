@@ -5,6 +5,8 @@ import { getLang } from "./i18n";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import ProductDetails from "./pages/ProductDetails";
 import Profile from "./pages/Profile";
@@ -16,7 +18,8 @@ import Cart from "./pages/Cart";
 import Favorites from "./pages/Favorites";
 import Chats from "./pages/Chats";
 // لاحقاً نضيف باقي الصفحات هنا (Register, Home, MyProducts ...)
-
+import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
+import VerifyOTP from "./pages/VerifyOTP";
 export default function App() {
   const { darkMode } = useTheme();
   const lang = getLang();
@@ -70,8 +73,16 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/verify-code" element={<VerifyOTP />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/register" element={<Register />} />
+          
           <Route path="/" element={<Home />} />
+          <Route
+            path="/sso-callback"
+            element={<AuthenticateWithRedirectCallback />}
+          />
           <Route path="/products/:id" element={<ProductDetails />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/my-products" element={<MyProducts />} />

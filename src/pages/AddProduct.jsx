@@ -12,9 +12,74 @@ const CONDITION_OPTIONS = [
   { key: 'condition_poor', value: 'poor' },
 ];
 
+// Multilingual fallback data for provinces and cities
+const PROVINCE_FALLBACKS = [
+  { provinceId: 'p-baghdad', nameAr: 'بغداد', nameEn: 'Baghdad' },
+  { provinceId: 'p-basra', nameAr: 'البصرة', nameEn: 'Basra' },
+  { provinceId: 'p-ninawa', nameAr: 'نينوى', nameEn: 'Nineveh' },
+  { provinceId: 'p-erbil', nameAr: 'أربيل', nameEn: 'Erbil' },
+];
+
+const CITY_FALLBACKS = {
+  'p-baghdad': {
+    ar: ['بغداد', 'الكرخ', 'الرصافة'],
+    en: ['Baghdad', 'Karkh', 'Rusafa']
+  },
+  'بغداد': {
+    ar: ['بغداد', 'الكرخ', 'الرصافة'],
+    en: ['Baghdad', 'Karkh', 'Rusafa']
+  },
+  'p-basra': {
+    ar: ['البصرة', 'القرنة', 'الفاو'],
+    en: ['Basra', 'Al-Qurna', 'Al-Faw']
+  },
+  'البصرة': {
+    ar: ['البصرة', 'القرنة', 'الفاو'],
+    en: ['Basra', 'Al-Qurna', 'Al-Faw']
+  },
+  'p-ninawa': {
+    ar: ['الموصل', 'تلكيف', 'بعشيقة'],
+    en: ['Mosul', 'Tallkayf', 'Bashiqa']
+  },
+  'نينوى': {
+    ar: ['الموصل', 'تلكيف', 'بعشيقة'],
+    en: ['Mosul', 'Tallkayf', 'Bashiqa']
+  },
+  'p-erbil': {
+    ar: ['أربيل', 'شقلاوة', 'صلاح الدين'],
+    en: ['Erbil', 'Shaqlawa', 'Salahaddin']
+  },
+  'أربيل': {
+    ar: ['أربيل', 'شقلاوة', 'صلاح الدين'],
+    en: ['Erbil', 'Shaqlawa', 'Salahaddin']
+  },
+};
+
+// Get current language
+const getCurrentLang = () => {
+  try {
+    return localStorage.getItem('lang') || 'ar';
+  } catch {
+    return 'ar';
+  }
+};
+
 export default function AddProduct() {
   const navigate = useNavigate();
-  const userType = typeof window !== 'undefined' ? localStorage.getItem('userType') || 'buyer' : 'buyer';
+  const [token, setToken] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || null;
+    }
+    return null;
+  });
+
+  const [userType, setUserType] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userType') || 'both';
+    }
+    return 'both';
+  });
+
   const canSell = userType === 'seller' || userType === 'both';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,14 +113,44 @@ export default function AddProduct() {
         setCategories(cats.data || []);
         setProvinces(prov.data || []);
       } catch (err) {
-        //ddddddd
         console.error("Failed to load categories or provinces:", err);
         setError(t('error_loading_form_data'));
+        // Use fallback data with multilingual support
+        setProvinces(PROVINCE_FALLBACKS);
       }
     };
     load();
   }, []);
 
+  // Listen for storage changes to update auth state
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (typeof window !== 'undefined') {
+        const newToken = localStorage.getItem('token');
+        const newUserType = localStorage.getItem('userType') || 'both';
+        setToken(newToken);
+        setUserType(newUserType);
+      }
+    };
+
+    // Listen for storage events
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check immediately in case localStorage was updated in the same session
+    handleStorageChange();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Check auth status on mount and redirect if needed
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+  }, [token, navigate]);
 
   useEffect(() => {
     const loadCities = async () => {
@@ -64,7 +159,17 @@ export default function AddProduct() {
         const res = await axiosInstance.get(`/provinces/${form.provinceId}/cities`);
         setCities(res.data || []);
       } catch (e) {
-        setCities([]);
+        console.error("Failed to load cities:", e);
+        // Use fallback data with multilingual support
+        const currentLang = getCurrentLang();
+        const key = String(form.provinceId);
+        const fb = CITY_FALLBACKS[key] || CITY_FALLBACKS[key.replace(/^p-/, '')] || [];
+        const citiesList = fb[currentLang] || fb.ar || [];
+        setCities(citiesList.map((n, i) => ({
+          id: i + 1,
+          nameAr: currentLang === 'ar' ? n : (fb.en?.[i] || n),
+          nameEn: currentLang === 'en' ? n : (fb.ar?.[i] || n)
+        })));
       }
     };
     loadCities();
@@ -73,67 +178,7 @@ export default function AddProduct() {
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
 
-  // AddProduct.jsx
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   setError('');
-  //   setSuccess('');
-
-
-
-
-  //   const requiredNumericFields = ['categoryId', 'provinceId', 'cityId', 'price'];
-  //   for (const field of requiredNumericFields) {
-  //     if (!form[field] || isNaN(Number(form[field]))) {
-  //       setError(`الرجاء إدخال رقم صحيح لحقل ${field}.`);
-  //       setLoading(false);
-  //       return;
-  //     }
-  //   }
-  //   // const numericPrice = parseFloat(form.price);
-  //   // if (isNaN(numericPrice)) {
-  //   //   setError('الرجاء إدخال سعر صحيح');
-  //   //   setLoading(false);
-  //   //   return;
-  //   // }
-  //   const formData = new FormData();
-
-  //   formData.append('title', form.title);
-  //   formData.append('description', form.description);
-  //   formData.append('price', Number(form.price)); 
-  //   formData.append('categoryId',Number(form.categoryId));
-  //   formData.append('condition', form.condition);
-  //   formData.append('provinceId',Number (form.provinceId));
-  //   formData.append('cityId', Number( form.cityId));
-  //   formData.append('address', form.address);
-
-
-  //   for (const file of files) {
-  //     formData.append('images', file);
-  //   }
-
-  //   try {
-
-  //     await axiosInstance.post('/products', formData, {
-  //       headers: {
-  //         'Content-Type': 'multipart/form-data',
-  //       },
-  //     });
-
-  //     setSuccess(t('success_product_added'));
-
-
-  //   } catch (err) {
-  //     console.error("Submission error:", err.response?.data);
-  //     const messages = err.response?.data?.message || ['حدث خطأ.'];
-  //     setError(messages.join(', '))
-  //     // setError(err.response?.data?.message || t('error_adding_product'));
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -228,87 +273,6 @@ export default function AddProduct() {
     }
   };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setError('');
-  //   setSuccess('');
-  //   setLoading(true);
-  //   try {
-  //     const required = ['title','categoryId','price','condition','provinceId','cityId'];
-  //     for (const k of required) if (!form[k]) throw new Error('missing');
-
-  //     const payload = {
-  //       title: form.title,
-  //       description: form.description,
-  //       categoryId: Number(form.categoryId),
-  //       price: parseFloat(form.price),
-  //       condition: form.condition,
-  //       provinceId: Number(form.provinceId),
-  //       cityId: Number(form.cityId),
-  //       address: form.address,
-  //       isNegotiable: Boolean(form.isNegotiable),
-  //     };
-
-  //     const createRes = await axiosInstance.post('/products', payload);
-  //     const newProduct = createRes.data;
-  //     const productId = newProduct?.productId;
-
-  //     if (productId && files?.length) {
-  //       for (let i = 0; i < files.length; i++) {
-  //         const file = files[i];
-  //         const formData = new FormData();
-  //         formData.append('image', file);
-  //         formData.append('isPrimary', String(i === 0));
-  //         formData.append('displayOrder', String(i));
-  //         await axiosInstance.post(`/images/upload/${productId}`, formData, {
-  //           headers: { 'Content-Type': 'multipart/form-data' },
-  //         });
-  //       }
-  //     }
-
-  //     setSuccess('');
-  //     setTimeout(() => navigate(`/products/${productId}`), 800);
-  //   } catch (err) {
-  //     setError('');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  if (!canSell) {
-    return (
-      <Container sx={{ mt: 6 }}>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-          {t('add_product_title')}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" onClick={() => navigate('/register')}>{t('register')}</Button>
-          <Button variant="contained" onClick={() => navigate('/')}>{t('home')}</Button>
-        </Box>
-      </Container>
-    );
-  }
-
   return (
     <Container sx={{ mt: 4 }}>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('add_product_title')}</Typography>
@@ -326,7 +290,7 @@ export default function AddProduct() {
               <Grid item xs={12} md={6}>
                 <TextField fullWidth select label={t('field_category')} value={form.categoryId} onChange={(e) => update('categoryId', e.target.value)}>
                   {categories.map((c) => (
-                    <MenuItem key={c.categoryId} value={c.categoryId}>{c.nameAr || c.name}</MenuItem>
+                    <MenuItem key={c.categoryId} value={c.categoryId}>{c.nameAr || c.name || `Category ${c.categoryId}`}</MenuItem>
                   ))}
                 </TextField>
               </Grid>
@@ -343,12 +307,20 @@ export default function AddProduct() {
               </Grid>
               <Grid item xs={12} md={4}>
                 <TextField fullWidth select label={t('field_province')} value={form.provinceId} onChange={(e) => update('provinceId', e.target.value)}>
-                  {provinces.map((p) => (<MenuItem key={p.provinceId} value={p.provinceId}>{p.nameAr || p.name}</MenuItem>))}
+                  {provinces.map((p) => (
+                    <MenuItem key={p.provinceId} value={p.provinceId}>
+                      {getCurrentLang() === 'ar' ? (p.nameAr || p.name) : (p.nameEn || p.name || p.nameAr)}
+                    </MenuItem>
+                  ))}
                 </TextField>
               </Grid>
               <Grid item xs={12} md={4}>
                 <TextField fullWidth select label={t('field_city')} value={form.cityId} onChange={(e) => update('cityId', e.target.value)}>
-                  {cities.map((c) => (<MenuItem key={c.cityId} value={c.cityId}>{c.nameAr || c.name}</MenuItem>))}
+                  {cities.map((c) => (
+                    <MenuItem key={c.cityId || c.id} value={c.cityId || c.id}>
+                      {getCurrentLang() === 'ar' ? (c?.nameAr || c?.name || String(c)) : (c?.nameEn || c?.name || c?.nameAr || String(c))}
+                    </MenuItem>
+                  ))}
                 </TextField>
               </Grid>
               <Grid item xs={12} md={8}>
@@ -373,69 +345,3 @@ export default function AddProduct() {
     </Container>
   );
 }
-
-// return (
-//     <Container sx={{ mt: 4 }}>
-//       <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('add_product_title')}</Typography>
-//       {loading && <LinearProgress sx={{ mb: 2 }} />}
-//       {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
-//       {success && <Typography color="primary" sx={{ mb: 2 }}>{success}</Typography>}
-
-//       <Card>
-//         <CardContent>
-//           <Box component="form" onSubmit={handleSubmit}>
-//             <Grid container spacing={2}>
-//               {/* --- تم حذف 'item' من كل الأسطر التالية --- */}
-//               <Grid xs={12} md={6}>
-//                 <TextField fullWidth label={t('field_title')} value={form.title} onChange={(e)=>update('title', e.target.value)} />
-//               </Grid>
-//               <Grid xs={12} md={6}>
-//                 <TextField fullWidth select label={t('field_category')} value={form.categoryId} onChange={(e)=>update('categoryId', e.target.value)}>
-//                   {categories.map((c) => (
-//                     <MenuItem key={c.categoryId} value={c.categoryId}>{c.nameAr || c.name}</MenuItem>
-//                   ))}
-//                 </TextField>
-//               </Grid>
-//               <Grid xs={12}>
-//                 <TextField fullWidth multiline minRows={3} label={t('field_description')} value={form.description} onChange={(e)=>update('description', e.target.value)} />
-//               </Grid>
-//               <Grid xs={12} md={4}>
-//                 <TextField fullWidth type="number" label={t('field_price')} value={form.price} onChange={(e)=>update('price', e.target.value)} />
-//               </Grid>
-//               <Grid xs={12} md={4}>
-//                 <TextField fullWidth select label={t('field_condition')} value={form.condition} onChange={(e)=>update('condition', e.target.value)}>
-//                   {CONDITION_OPTIONS.map((o)=>(<MenuItem key={o.value} value={o.value}>{t(o.key)}</MenuItem>))}
-//                 </TextField>
-//               </Grid>
-//               <Grid xs={12} md={4}>
-//                 <TextField fullWidth select label={t('field_province')} value={form.provinceId} onChange={(e)=>update('provinceId', e.target.value)}>
-//                   {provinces.map((p) => (<MenuItem key={p.provinceId} value={p.provinceId}>{p.nameAr || p.name}</MenuItem>))}
-//                 </TextField>
-//               </Grid>
-//               <Grid xs={12} md={4}>
-//                 <TextField fullWidth select label={t('field_city')} value={form.cityId} onChange={(e)=>update('cityId', e.target.value)}>
-//                   {cities.map((c) => (<MenuItem key={c.cityId} value={c.cityId}>{c.nameAr || c.name}</MenuItem>))}
-//                 </TextField>
-//               </Grid>
-//               <Grid xs={12} md={8}>
-//                 <TextField fullWidth label={t('field_address')} value={form.address} onChange={(e)=>update('address', e.target.value)} />
-//               </Grid>
-//               <Grid xs={12}>
-//                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-//                   <Button variant="outlined" component="label">
-//                     {t('field_images_upload')}
-//                     <input type="file" hidden multiple accept="image/*" onChange={(e)=>setFiles(Array.from(e.target.files||[]))} />
-//                   </Button>
-//                   <Typography variant="body2">{files.length ? String(files.length) : t('no_files_selected')}</Typography>
-//                 </Box>
-//               </Grid>
-//               <Grid xs={12}>
-//                 <Button type="submit" variant="contained">{t('submit_product')}</Button>
-//               </Grid>
-//             </Grid>
-//           </Box>
-//         </CardContent>
-//       </Card>
-//     </Container>
-//   );
-// }

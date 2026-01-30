@@ -66,7 +66,7 @@ export default function Profile() {
     try {
       const fd = new FormData();
       fd.append('avatar', file);
-      const res = await axiosInstance.post('/users/avatar', fd);
+      const res = await axiosInstance.post(`/users/avatar/${userId}`, fd);
       const data = res?.data || {};
       // Try multiple common shapes
       let path = data.avatar || data.avatarUrl || data.photo || data.picture || data.image || data.imagePath

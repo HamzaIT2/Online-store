@@ -10,7 +10,7 @@ const isProd = import.meta.env.PROD;
 const axiosInstance = axios.create({
   baseURL:
     import.meta.env.VITE_API_BASE_URL ||
-    "https://al-dawaar-backend.onrender.com/api/v1",
+    "http://localhost:3000/api/v1",
   // baseURL: process.env.REACT_APP_API_URL
   // baseURL: "https://al-dawaar-backend.onrender.com/api/v1",
 });
