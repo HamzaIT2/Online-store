@@ -5,6 +5,8 @@ import ProductCardChatButton from "./ProductCardChatButton";
 import { t } from "../i18n";
 import axiosInstance from "../api/axiosInstance";
 import { useState, useEffect } from "react";
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+
 
 // Get current language
 const getCurrentLang = () => {
@@ -69,6 +71,7 @@ export default function ProductCard({ product }) {
         productId: product?.productId,
         title: product?.title,
         price: product?.price,
+        description: product?.description,
         images: imageUrl ? [{ imageUrl }] : [],
       };
       // avoid duplicates by productId
@@ -148,11 +151,12 @@ export default function ProductCard({ product }) {
     <>
       <Card
         sx={{
+          width: "100%",
           borderRadius: 3,
           boxShadow: "0px 2px 8px rgba(0,0,0,0.1)",
           transition: "transform 0.3s",
           "&:hover": { transform: "scale(1.03)" },
-          height: "100%",
+          
           display: "flex",
           flexDirection: "column",
         }}
@@ -164,16 +168,22 @@ export default function ProductCard({ product }) {
         <CardMedia component="img" height="200" image={mainImage} alt={product?.title || 'Product'} />
 
         <CardContent sx={{ flexGrow: 1 }}>
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-            {product?.title}
+
+          
+          <Typography variant="h7" fontWeight="bold" sx={{ mb: 1 }}>
+            {product?.title?.length>35 ? product?.title?.slice(0,35) + "...":product?.title}
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {product?.description?.length > 180 ? product?.description?.slice(0, 180) + "..." : product?.description}  
+          </Typography>
+          
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {provinceName} {provinceName && conditionLabel ? "-" : ""} {conditionLabel}
           </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography variant="h6" color="primary" fontWeight="bold">
                 {product?.price?.toLocaleString()} {t('currency_iqd')}
               </Typography>
@@ -187,9 +197,27 @@ export default function ProductCard({ product }) {
         </CardContent>
 
         <Box sx={{ textAlign: "center", pb: 2 }}>
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Button variant="contained" color="primary" onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>{t('add_to_cart') || 'Add to Cart'}</Button>
-            <Button variant="contained" color="error" onClick={(e) => { e.stopPropagation(); handleDetails(); }}>{t('view_details')}</Button>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-evenly', flexWrap: 'wrap' }}>
+           
+           
+           
+            <Button 
+            variant="outlined" 
+            color="primary" 
+            onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>
+              <AddShoppingCartIcon />
+            </Button>
+
+
+
+
+
+            <Button 
+            variant="contained" 
+            color="error" 
+            onClick={(e) => { e.stopPropagation(); handleDetails(); }}>
+            {t('view_details')}
+            </Button>
             <ProductCardChatButton
               sellerId={product?.userId || product?.sellerId}
               productId={product?.id || product?.productId}
@@ -198,7 +226,15 @@ export default function ProductCard({ product }) {
           </Box>
         </Box>
       </Card>
-      <Snackbar open={snackbarOpen} autoHideDuration={800} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+
+
+
+    
+      <Snackbar 
+      open={snackbarOpen} 
+      autoHideDuration={800} 
+      onClose={() => setSnackbarOpen(false)} 
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
           {t('added_to_cart') || 'تمت الإضافة إلى السلة'}
         </Alert>

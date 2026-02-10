@@ -20,6 +20,9 @@ import Chats from "./pages/Chats";
 // لاحقاً نضيف باقي الصفحات هنا (Register, Home, MyProducts ...)
 import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import VerifyOTP from "./pages/VerifyOTP";
+import ParticlesBackground from "./components/ParticlesBackground";
+import HeroSlider from "./components/HeroSlider";
+
 export default function App() {
   const { darkMode } = useTheme();
   const lang = getLang();
@@ -41,10 +44,11 @@ export default function App() {
           body: {
             direction: (lang === 'ar' || lang === 'ku') ? "rtl" : "ltr",
             fontFamily: "Cairo, sans-serif",
-            backgroundImage: darkMode
-              ? "linear-gradient(180deg, #0a1424 0%, #0b1320 100%)"
-              : "linear-gradient(180deg, #eef3ff 0%, #e3ebff 100%)",
-            backgroundAttachment: 'fixed',
+            // backgroundImage: darkMode
+            //   ? "linear-gradient(180deg, #0a1424 0%, #0b1320 100%)"
+            //   : "linear-gradient(180deg, #eef3ff 0%, #e3ebff 100%)",
+            // backgroundAttachment: 'fixed',
+            backgroundColor:'transparent'
           },
         },
       },
@@ -68,8 +72,12 @@ export default function App() {
 
   return (
     <MuiThemeProvider theme={theme}>
+      <ParticlesBackground />
       <CssBaseline />
+
       <BrowserRouter>
+
+
         <Navbar />
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -77,7 +85,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/register" element={<Register />} />
-          
+
           <Route path="/" element={<Home />} />
           <Route
             path="/sso-callback"

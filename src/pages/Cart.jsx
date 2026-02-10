@@ -36,7 +36,7 @@ export default function Cart() {
   };
 
   return (
-    <Container sx={{ mt: 4, direction: 'rtl' }}>
+    <Container sx={{ mt: 9 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>{t('cart') || 'سلة المشتريات'}</Typography>
         {items.length > 0 && (
@@ -67,8 +67,9 @@ export default function Cart() {
                 <Card>
                   <CardMedia component="img" height="160" image={src} alt={p?.title || 'Product'} />
                   <CardContent>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>{p?.title}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb:2 }}>{p?.title}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 400, mb: 2 }}>{p?.description}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {Number(p?.price)?.toLocaleString()} {t('currency_iqd')}
                     </Typography>
                     <Button color="error" variant="outlined" onClick={() => removeOne(p?.productId)}>

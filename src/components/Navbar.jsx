@@ -255,7 +255,7 @@
 //                     <ListItemText>{link.label}</ListItemText>
 //                   </MenuItem>
 //                 ))}
-              
+
 //               {!token && (
 //                 <>
 //                   <Divider sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />
@@ -293,7 +293,7 @@
 //                   </MenuItem>
 //                 </>
 //               )}
-              
+
 //               {token && (
 //                 <>
 //                   <Divider sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />
@@ -516,10 +516,12 @@
 //   );
 // }
 
-import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Menu, MenuItem, Avatar, Badge, Container, Tooltip, ListItemIcon, ListItemText, Switch } from "@mui/material";
+//---------------------------------------------------------------------------------------old-----------------------------------------------------------------------------------------
+
+import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Menu, MenuItem, Avatar, Badge, Container, Tooltip, ListItemIcon, ListItemText, Switch, TextField , InputAdornment} from "@mui/material";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import TranslateIcon from "@mui/icons-material/Translate";
-import AccountCircle from "@mui/icons-material/AccountCircle";
+
 import MenuIcon from '@mui/icons-material/Menu';
 import MessageIcon from '@mui/icons-material/Message';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -541,10 +543,22 @@ import axiosInstance from "../api/axiosInstance";
 import ContrastIcon from '@mui/icons-material/Contrast';
 import { styled } from '@mui/material/styles';
 import { CartIcon } from "./CartIcon";
+import ProfileDrawer from "./ProfileSidebar";
+
+import SearchIcon from '@mui/icons-material/Search';
+
+import TuneIcon from '@mui/icons-material/Tune';
+
+
+
+
+
 
 export default function Navbar() {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
+  
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const userType = typeof window !== 'undefined' ? (localStorage.getItem('userType') || 'buyer') : 'buyer';
   // const canSell = !!token && (userType === 'seller' || userType === 'both'); // Unused variable
@@ -558,6 +572,7 @@ export default function Navbar() {
   const [chatCount, setChatCount] = useState(0);
   const [cartCount, setCartCount] = useState(4);
   const [profile, setProfile] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   // const openProfile = Boolean(anchorProfile); // Unused variable
 
   const leftLinks = [
@@ -585,6 +600,15 @@ export default function Navbar() {
   const handleCloseNavMenu = () => setAnchorElNav(null);
   const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
   const handleCloseUserMenu = () => setAnchorElUser(null);
+
+
+
+  
+
+
+
+
+
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -709,7 +733,9 @@ export default function Navbar() {
   };
 
   return (
-    <AppBar position="static" sx={{ 
+    <AppBar position="fixed" sx={{
+      top: 0,
+      zIndex: 1100,
       backgroundColor: darkMode ? '#0d1b2a' : '#0d1b2a',
       boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'
     }}>
@@ -743,7 +769,7 @@ export default function Navbar() {
               }}
               open={Boolean(anchorElNav)}
               onClose={handleCloseNavMenu}
-              sx={{ 
+              sx={{
                 display: { xs: 'block', md: 'none' },
                 '& .MuiPaper-root': {
                   bgcolor: darkMode ? '#1a2f4a' : '#fff',
@@ -755,8 +781,8 @@ export default function Navbar() {
               {leftLinks
                 .filter(link => !link.requiresAuth || token)
                 .map((link) => (
-                  <MenuItem 
-                    key={link.path} 
+                  <MenuItem
+                    key={link.path}
                     onClick={() => {
                       navigate(link.path);
                       handleCloseNavMenu();
@@ -773,86 +799,88 @@ export default function Navbar() {
                     <ListItemText>{link.label}</ListItemText>
                   </MenuItem>
                 ))}
-              
+
               {/* ------------ FIX: Changed Fragments <> to Arrays [] ------------ */}
               {!token && [
-                  <Divider key="mob-div-1" sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />,
-                  <MenuItem 
-                    key="mob-login"
-                    onClick={() => {
-                      navigate('/login');
-                      handleCloseNavMenu();
-                    }}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
-                      <LoginIcon />
-                    </ListItemIcon>
-                    <ListItemText>{t('login')}</ListItemText>
-                  </MenuItem>,
-                  <MenuItem 
-                    key="mob-register"
-                    onClick={() => {
-                      navigate('/register');
-                      handleCloseNavMenu();
-                    }}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
-                      <HowToRegIcon />
-                    </ListItemIcon>
-                    <ListItemText>{t('register')}</ListItemText>
-                  </MenuItem>
+                <Divider key="mob-div-1" sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />,
+                <MenuItem
+                  key="mob-login"
+                  onClick={() => {
+                    navigate('/login');
+                    handleCloseNavMenu();
+                  }}
+                  sx={{
+                    '&:hover': {
+                      bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
+                    <LoginIcon />
+                  </ListItemIcon>
+                  <ListItemText>{t('login')}</ListItemText>
+                </MenuItem>,
+                <MenuItem
+                  key="mob-register"
+                  onClick={() => {
+                    navigate('/register');
+                    handleCloseNavMenu();
+                  }}
+                  sx={{
+                    '&:hover': {
+                      bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
+                    <HowToRegIcon />
+                  </ListItemIcon>
+                  <ListItemText>{t('register')}</ListItemText>
+                </MenuItem>
               ]}
-              
+
               {token && [
-                  <Divider key="mob-div-2" sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />,
-                  <MenuItem 
-                    key="mob-profile"
-                    onClick={() => {
-                      navigate('/profile');
-                      handleCloseNavMenu();
-                    }}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
-                      <AccountCircleIcon />
-                    </ListItemIcon>
-                    <ListItemText>{t('profile')}</ListItemText>
-                  </MenuItem>,
-                  <MenuItem 
-                    key="mob-logout"
-                    onClick={() => {
-                      handleLogout();
-                      handleCloseNavMenu();
-                    }}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
-                      <LogoutIcon />
-                    </ListItemIcon>
-                    <ListItemText>{t('logout')}</ListItemText>
-                  </MenuItem>
+                <Divider key="mob-div-2" sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />,
+                <MenuItem
+                  key="mob-profile"
+                  onClick={() => {
+                    navigate('/profile');
+                    handleCloseNavMenu();
+                  }}
+                  sx={{
+                    '&:hover': {
+                      bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
+                    <AccountCircleIcon />
+                  </ListItemIcon>
+                  <ListItemText>{t('profile')}</ListItemText>
+                </MenuItem>,
+                <MenuItem
+                  key="mob-logout"
+                  onClick={() => {
+                    handleLogout();
+                    handleCloseNavMenu();
+                  }}
+                  sx={{
+                    '&:hover': {
+                      bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: darkMode ? '#fff' : '#000' }}>
+                    <LogoutIcon />
+                  </ListItemIcon>
+                  <ListItemText>{t('logout')}</ListItemText>
+                </MenuItem>
               ]}
               {/* ----------------------------------------------------------------- */}
 
             </Menu>
+
+
 
           </Box>
 
@@ -873,7 +901,7 @@ export default function Navbar() {
               flexGrow: 0,
             }}
           >
-            Aldowar
+            {t('site_name')}
           </Typography>
 
           {/* CENTER: Navigation Links */}
@@ -888,25 +916,98 @@ export default function Navbar() {
             <Button
               component={RouterLink}
               to="/categories"
-              variant="contained"
+              variant=""
               sx={{
                 textTransform: 'none',
-                backgroundColor: '#34495e',
+
                 fontWeight: 600,
-                borderRadius: 2,
-                '&:hover': {
-                  backgroundColor: '#2c3e50',
-                },
+
               }}
             >
               {t('categories')}
             </Button>
 
             <Button component={RouterLink} to="/cart" color="inherit" sx={{ textTransform: 'none', fontWeight: 600 }}>{t('cart')}</Button>
+
+             <Box 
+             sx={{
+              
+                bgcolor: '#ffffff',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 2,
+                p: 0,
+                mx: 12,
+                flexGrow: 1, 
+                maxWidth: 600, 
+                
+                borderRadius: 3,
+                border: '1px solid #e0e0e0',
+                
+            }}
+             
+             >
+                 <Tooltip 
+                 
+                 
+                 title="تصفية النتائج">
+                     <IconButton
+                     sx={{
+                      ml:2,
+                      color: '#000000',
+                      bgcolor: '#ffffff',
+                      '&:hover': {
+                        bgcolor: '#ff0000'
+                      }
+                     }}
+                     onClick={() => setOpenFilterDrawer(true)} size="small"
+                     >
+                        <TuneIcon  />
+                     </IconButton>
+                </Tooltip>
+                <Divider orientation="vertical" flexItem sx={{ bgcolor: '#ffffff', height: 30, alignSelf: 'center' }} />
+
+              <TextField
+              sx={{
+                mr:2,
+                ml:2,
+              }}
+              variant="standard"
+              placeholder={t('search_placeholder')}
+              fullWidth
+              value={searchTerm}
+              onChange={ (q) => setSearchTerm(q.target.value) }
+              onKeyDown={ (e) => { 
+                if (e.key === 'Enter') {
+                  const trimmedSearch = searchTerm.trim();
+                  if (trimmedSearch) {
+                    navigate(`/?q=${encodeURIComponent(trimmedSearch)}`);
+                  } else {
+                    navigate('/');
+                  }
+                }
+              }}
+              InputProps={{
+                disableUnderline: true,
+                 endAdornment: (
+                <InputAdornment position="end">
+                  <SearchIcon color="#000000" />
+               </InputAdornment>
+                    ),
+                }}
+              />
+
+             </Box>
+           
           </Box>
 
           {/* DESKTOP: Right Side Navigation */}
           <Box sx={{ flex: 1, display: { xs: 'none', md: 'flex' }, alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+            
+            
+            
+            <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.3)', height: 28, alignSelf: 'center', mx: 1 }} />
             <Button onClick={handleAddProductNav} color="inherit" sx={{ textTransform: 'none', fontWeight: 600 }}>{t('add_product') || 'Add Listing'}</Button>
 
             <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.3)', height: 28, alignSelf: 'center', mx: 1 }} />
@@ -1031,8 +1132,176 @@ export default function Navbar() {
             </Menu>
           </Box>
 
+          <IconButton onClick={() => setIsDrawerOpen(true)}>
+            <Avatar src="/path-to-image.jpg" alt="User" />
+          </IconButton>
+
         </Toolbar>
       </Container>
+      <ProfileDrawer
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+      />
     </AppBar>
+
   );
 }
+
+
+//--------------------------------===========================================================================------------------------
+
+
+
+// import { AppBar, Toolbar, Typography, IconButton, Box, TextField, Avatar, Badge, Container, Tooltip } from "@mui/material";
+// import { Search, ShoppingCart, Tune, Menu as MenuIcon } from "@mui/icons-material"; // Tune هي أيقونة الفلتر
+// import { useState, useEffect } from "react";
+// import { useNavigate, useSearchParams } from "react-router-dom";
+// import ProfileDrawer from "../components/ProfileSidebar";
+// import FilterDrawer from "../pages/FilterDrawer"; // استدعاء ملف الفلتر الذي أرسلته
+// import { t } from "../i18n";
+
+// export default function Navbar() {
+//   const navigate = useNavigate();
+//   const [searchParams] = useSearchParams();
+  
+//   // States
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [cartCount, setCartCount] = useState(0);
+//   const [isProfileOpen, setIsProfileOpen] = useState(false);
+//   const [isFilterOpen, setIsFilterOpen] = useState(false); // للتحكم في فتح الفلتر
+
+//   // 1. مزامنة نص البحث مع الرابط عند التحميل
+//   useEffect(() => {
+//     setSearchTerm(searchParams.get("search") || "");
+//   }, [searchParams]);
+
+//   // 2. تحديث عداد السلة
+//   useEffect(() => {
+//     const loadCart = () => {
+//       try {
+//         const storedUser = localStorage.getItem('user');
+//         let uid = 'guest';
+//         if(storedUser) uid = JSON.parse(storedUser).id || 'guest';
+//         const isRTL = localStorage.getItem('lang') === 'ar';
+//         const data = JSON.parse(localStorage.getItem(isRTL ? `cart_user_${uid}` : 'cart') || '[]');
+//         setCartCount(Array.isArray(data) ? data.length : 0);
+//       } catch (_) { setCartCount(0); }
+//     };
+//     loadCart();
+//     window.addEventListener('cart:updated', loadCart);
+//     return () => window.removeEventListener('cart:updated', loadCart);
+//   }, []);
+
+//   // 3. دالة تطبيق البحث والفلترة (تحديث الرابط)
+//   const updateURL = (newParams) => {
+//     const params = new URLSearchParams(searchParams);
+    
+//     // دمج الباراميترات الجديدة
+//     Object.keys(newParams).forEach(key => {
+//       if (newParams[key] !== undefined && newParams[key] !== "" && newParams[key] !== null) {
+//         params.set(key, newParams[key]);
+//       } else {
+//         params.delete(key);
+//       }
+//     });
+
+//     navigate(`/?${params.toString()}`);
+//   };
+
+//   // عند الضغط على Enter في البحث
+//   const handleSearch = () => {
+//     updateURL({ search: searchTerm });
+//   };
+
+//   // عند تطبيق الفلاتر من الـ FilterDrawer
+//   const handleApplyFilter = (filterData) => {
+//     // filterData تأتي من ملف FilterDrawer وتحتوي على (priceRange, condition, province...)
+//     updateURL({
+//       minPrice: filterData.minPrice || filterData.priceRange?.[0],
+//       maxPrice: filterData.maxPrice || filterData.priceRange?.[1],
+//       condition: filterData.condition === 'all' ? '' : filterData.condition,
+//       provinceId: filterData.province || filterData.provinceId, // تأكد من الاسم في FilterDrawer
+//     });
+//   };
+
+//   return (
+//     <>
+//       <AppBar position="sticky" color="default" elevation={1} sx={{ bgcolor: 'background.paper' }}>
+//         <Container maxWidth="xl">
+//           <Toolbar disableGutters sx={{ justifyContent: 'space-between', gap: 2 }}>
+            
+//             {/* الشعار */}
+//             <Typography
+//               variant="h6"
+//               noWrap
+//               component="div"
+//               onClick={() => navigate('/')}
+//               sx={{ cursor: 'pointer', fontWeight: 'bold', color: 'primary.main', display: { xs: 'none', sm: 'block' } }}
+//             >
+//               LOGO
+//             </Typography>
+
+//             {/* --- منطقة الوسط: البحث + زر الفلتر --- */}
+//             <Box sx={{ 
+//                 display: 'flex', 
+//                 alignItems: 'center', 
+//                 flexGrow: 1, 
+//                 maxWidth: 600, 
+//                 bgcolor: 'action.hover', 
+//                 borderRadius: 3,
+//                 border: '1px solid #e0e0e0',
+//                 p: '2px 4px'
+//             }}>
+//                 {/* زر الفلتر */}
+//                 <Tooltip title="تصفية النتائج">
+//                     <IconButton onClick={() => setIsFilterOpen(true)} sx={{ p: '10px' }}>
+//                         <Tune color="primary" />
+//                     </IconButton>
+//                 </Tooltip>
+
+//                 {/* حقل الكتابة */}
+//                 <TextField
+//                     variant="standard"
+//                     placeholder={t('search_placeholder') || "ابحث عن منتج..."}
+//                     fullWidth
+//                     value={searchTerm}
+//                     onChange={(e) => setSearchTerm(e.target.value)}
+//                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+//                     InputProps={{ disableUnderline: true, sx: { ml: 1, flex: 1 } }}
+//                 />
+                
+//                 {/* زر البحث */}
+//                 <IconButton onClick={handleSearch} sx={{ p: '10px' }}>
+//                     <Search />
+//                 </IconButton>
+//             </Box>
+
+//             {/* --- الأيقونات الجانبية --- */}
+//             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+//                 <IconButton onClick={() => navigate('/cart')}>
+//                     <Badge badgeContent={cartCount} color="error">
+//                         <ShoppingCart />
+//                     </Badge>
+//                 </IconButton>
+                
+//                 <IconButton onClick={() => setIsProfileOpen(true)}>
+//                     <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }} />
+//                 </IconButton>
+//             </Box>
+
+//           </Toolbar>
+//         </Container>
+//       </AppBar>
+
+//       {/* القوائم الجانبية */}
+//       <ProfileDrawer open={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      
+//       {/* استدعاء ملف الفلتر وربطه بدالة التحديث */}
+//       <FilterDrawer 
+//         open={isFilterOpen} 
+//         onClose={() => setIsFilterOpen(false)} 
+//         onApply={handleApplyFilter} 
+//       />
+//     </>
+//   );
+// }

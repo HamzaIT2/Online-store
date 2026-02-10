@@ -794,30 +794,39 @@ export default function ProductDetails() {
   if (!product) return null;
 
   return (
-    <Box sx={{
-      bgcolor: darkMode ? '#0d1b2a' : '#F9FAFB',
-      py: 4,
-      display: 'flex',
-      alignItems: 'center',
-      minHeight: '100vh'
-    }}>
-      <Container maxWidth="lg">
+    // <Box sx={{
+    //   width: '100%',
+    //   bgcolor: darkMode ? '#0d1b2a' : '#F9FAFB',
+    //   py: 8,
+    //   display: 'flex',
+    //   alignItems: 'center',
+    //   minHeight: '100vh'
+    // }}>
+      <Container sx={{ 
+        mt: 10,
+        width: '100%',
+        }}>
         <Paper
-          elevation={0}
+          elevation={10}
           sx={{
             borderRadius: '28px',
             overflow: 'hidden',
             bgcolor: darkMode ? '#1a2f4a' : '#fff',
-            boxShadow: darkMode ? '0px 10px 40px rgba(0,0,0,0.3)' : '0px 10px 40px rgba(0,0,0,0.05)',
-            p: { xs: 2, md: 3 }
+            boxShadow: darkMode ? '20px 20px 40px rgba(0,0,0,0.3)' : '20px 20px 40px rgba(0,0,0,0.05)',
+            p:10
           }}
         >
-          <Grid container spacing={3}>
+          <Grid container spacing={4}>
             {/* Left Side: Image */}
-            <Grid item xs={12} md={6}>
+            <Grid 
+            item 
+            xs={12} 
+            md={6}
+            
+            >
               <Box
                 sx={{
-                  height: { xs: 250, md: 350 },
+                  height: { xs: 350, md: 350 },
                   borderRadius: '20px',
                   bgcolor: darkMode ? '#0d1b2a' : '#F3F4F6',
                   display: 'flex',
@@ -845,8 +854,8 @@ export default function ProductDetails() {
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: 'white',
-                        bgcolor: 'rgba(0,0,0,0.4)',
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' }
+                        bgcolor: 'rgba(0,0,0,0.2)',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
                       }}
                     >
                       <ArrowBackIosNewIcon fontSize="small" />
@@ -859,8 +868,8 @@ export default function ProductDetails() {
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: 'white',
-                        bgcolor: 'rgba(0,0,0,0.4)',
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' }
+                        bgcolor: 'rgba(0,0,0,0.2)',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
                       }}
                     >
                       <ArrowForwardIosIcon fontSize="small" />
@@ -876,9 +885,13 @@ export default function ProductDetails() {
                         key={idx}
                         onClick={() => setSelectedIndex(idx)}
                         sx={{
+                          p: 1,
+                          cursor: 'pointer',
+
+
                           width: 10, height: 10, borderRadius: '50%',
                           bgcolor: selectedIndex === idx ? '#FFD700' : 'rgba(255,255,255,0.7)',
-                          cursor: 'pointer',
+
                           transition: '0.3s'
                         }}
                       />
@@ -895,9 +908,10 @@ export default function ProductDetails() {
               <Typography variant="overline" sx={{
                 color: darkMode ? '#aaa' : 'text.secondary',
                 letterSpacing: 1,
-                fontSize: '0.8rem'
+                fontSize: '0.9rem'
               }}>
-                {product.category?.nameAr || product.category?.name || "CATEGORY"}
+                {t('elctronic')}
+
               </Typography>
 
               {/* Title */}
@@ -936,7 +950,7 @@ export default function ProductDetails() {
               </Typography>
 
               {/* Description */}
-              <Typography variant="body2" color={darkMode ? '#ccc' : 'text.secondary'} paragraph sx={{ mb: 3, lineHeight: 1.6, fontSize: '0.95rem' }}>
+              <Typography variant="body2" color={darkMode ? '#ccc' : 'text.secondary'} paragraph sx={{ mb: 2, lineHeight: 1.6, fontSize: '0.95rem' }}>
                 {product.description || t('no_description')}
               </Typography>
 
@@ -1122,6 +1136,6 @@ export default function ProductDetails() {
         </Dialog>
 
       </Container>
-    </Box>
+    //</Box>
   );
 }

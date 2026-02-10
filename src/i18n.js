@@ -110,10 +110,15 @@ const dict = {
     new_reg1:"التسجيل",
     new_reg3:"كلمة المرور؟",
     new_reg:"هل نسيت",
+    elctronic:"الكترونيات",
+    title_nav:"الدوار العراقي",
+    sub_title_nav:"بيع واشتر كل شيء بسهوله وامان",
+    send:"تواصل",
+    
 
   },
   en: {
-    site_name: "Aldowar",
+    site_name: "Aldawaar",
     home: "Home",
     categories: "Categories",
     cart: "Cart",
@@ -201,6 +206,10 @@ const dict = {
     new_reg1:"Register",
     new_reg3:"Password ?",
     new_reg4:"Forgot your ",
+    elctronic:"Electronics",
+    title_nav:"Aldawaar Iraqi",
+    sub_title_nav:"Buy and sell everything easily and securely",
+    send:"Contact",
   },
   // ku: {
   //   // Fallback to English for now

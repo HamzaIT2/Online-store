@@ -106,8 +106,8 @@ export default function Favorites() {
   );
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Box sx={{ mb: 3 }}>
+    <Container sx={{ mt: 12 }}>
+      {/* <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, textAlign: 'right' }}>{t('my_ads') || 'My Ads'}</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddProduct}>{t('add_product') || 'أضف إعلان'}</Button>
@@ -135,10 +135,10 @@ export default function Favorites() {
         )}
       </Box>
 
-      <Divider sx={{ my: 4 }} />
+      <Divider sx={{ my: 4 }} /> */}
 
       <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, textAlign: 'right' }}>{t('favorites') || 'المفضلات'}</Typography>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('favorites') || 'المفضلات'}</Typography>
         {(!items || !items.length) ? (
           <Typography align="center">{t('favorites_empty') || 'لا توجد عناصر مفضلة'}</Typography>
         ) : (

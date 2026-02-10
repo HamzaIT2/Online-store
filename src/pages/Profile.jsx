@@ -58,15 +58,37 @@ export default function Profile() {
   };
 
   const handleEditToggle = () => setEditing((s) => !s);
-  
+
   const uploadAvatar = async (file) => {
     if (!file) return;
     setUploadError("");
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('avatar', file);
-      const res = await axiosInstance.post(`/users/avatar/${userId}`, fd);
+      fd.append('image', file);  // Try 'image' instead of 'avatar'
+      // Try multiple possible endpoints for avatar upload
+      let res;
+      try {
+        // Try PUT to update profile with avatar
+        res = await axiosInstance.put('/users/profile', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } catch (e) {
+        try {
+          // Try POST to users/{id}/avatar
+          res = await axiosInstance.post(`/users/${profile?.userId || profile?.id}/avatar`, fd);
+        } catch (e2) {
+          try {
+            // Try POST to users/{userId}/avatar
+            res = await axiosInstance.post(`/users/${profile?.userId || profile?.id}/avatar`, fd);
+          } catch (e3) {
+            // Try PUT to users/profile
+            res = await axiosInstance.patch(`/users/${profile?.userId || profile?.id}`, fd, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
+          }
+        }
+      }
       const data = res?.data || {};
       // Try multiple common shapes
       let path = data.avatar || data.avatarUrl || data.photo || data.picture || data.image || data.imagePath
@@ -80,7 +102,7 @@ export default function Profile() {
           for (const [k, v] of Object.entries(data)) {
             if (typeof v === 'string' && (v.includes('/uploads/') || /^https?:\/\//i.test(v))) { path = v; break; }
           }
-        } catch {}
+        } catch { }
       }
       if (path) {
         if (/^https?:\/\//i.test(path)) {
@@ -91,7 +113,7 @@ export default function Profile() {
         setForm((f) => ({ ...f, avatar: path }));
         setProfile((p) => ({ ...(p || {}), avatar: path }));
         // Also refetch profile to sync any other changes from backend
-        try { const pr = await axiosInstance.get('/users/profile'); setProfile(pr.data || {}); } catch {}
+        try { const pr = await axiosInstance.get('/users/profile'); setProfile(pr.data || {}); } catch { }
       } else {
         // Fallback: show a local preview using blob URL, don't show error
         try {
@@ -100,7 +122,7 @@ export default function Profile() {
           setProfile((p) => ({ ...(p || {}), avatar: blobUrl }));
           console.warn('Unexpected upload response shape, used blob preview instead', data);
           // Attempt to refetch profile shortly after upload to get final persisted avatar
-          setTimeout(async () => { try { const pr = await axiosInstance.get('/users/profile'); setProfile(pr.data || {}); } catch {} }, 500);
+          setTimeout(async () => { try { const pr = await axiosInstance.get('/users/profile'); setProfile(pr.data || {}); } catch { } }, 500);
         } catch {
           setUploadError(t('avatar_upload_failed') || 'Avatar upload failed');
         }

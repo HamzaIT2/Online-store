@@ -1047,14 +1047,15 @@ export default function Login() {
       // --- حالة النجاح (الحساب مفعل) ---
       console.log("✅ Login Successful:", res.data);
       
-      const userData = res.data.user || res.data.data?.user;
-      const token = res.data.token;
+      const userData = res.data.user || res.data.data?.user||res.data;
+      const token = res.data.token|| res.data.accessToken;
 
       localStorage.setItem("token", token);
-      localStorage.setItem("userId", userData?.id || userData?._id);
+      const finalUserId = userData.id || userData._id|| userData.userId
+      localStorage.setItem("userId", finalUserId);
       localStorage.setItem("userType", userData?.type || "buyer");
       localStorage.setItem("userName", userData?.name);
-
+      localStorage.setItem("user",JSON.stringify(userData))
       window.dispatchEvent(new Event("storage"));
       navigate("/");
 
@@ -1100,7 +1101,7 @@ export default function Login() {
 
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 3, boxShadow: 20, border: 1, borderRadius: 8, p: 2 }}>
+    <Container maxWidth="xs" sx={{ mt: 12, boxShadow: 20, border: 1, borderRadius: 8, p: 2 }}>
       <Typography variant="h5" sx={{ mb: 6, fontWeight: 700, mt: 5 }}>
         {t('login_title')}
         <LoginIcon sx={{ ml: 1 }} />

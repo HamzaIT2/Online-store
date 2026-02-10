@@ -7,7 +7,10 @@ import axiosInstance from "../api/axiosInstance";
 import Filters from "../components/Filters";
 import SearchBar from "../components/SearchBar";
 import ProductCard from "../components/ProductCard";
-
+import { Grow } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { fetchHeroSlidesFromApi } from "@/api/heroApi";
+import HeroSlider from "../components/HeroSlider";
 // Get current language
 const getCurrentLang = () => {
   try {
@@ -17,14 +20,19 @@ const getCurrentLang = () => {
   }
 };
 
+
 export default function Home() {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     category: "",
     province: "",
     condition: "",
     priceRange: [1000, 2000000],
   });
-
+  
+  const [heroSlides, setHeroSlides] = useState([]);
+  const [loadingHero, setLoadingHero] = useState(true);
+  const [scrollY, setScrollY] = useState(0);
   const [products, setProducts] = useState([]);
   const [prevProducts, setPrevProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,6 +43,62 @@ export default function Home() {
   const userType = typeof window !== 'undefined' ? (localStorage.getItem('userType') || 'buyer') : 'buyer';
   const canSell = userType === 'seller' || userType === 'both';
   const showCreateCta = !token || canSell;
+
+
+
+
+  const loadingHeroSlides = async () => {
+    try {
+      const data = await fetchHeroSlidesFromApi();
+      console.log("🔥 البيانات الخام من السيرفر:", data);
+
+      if (!data || data.length === 0) {
+        setHeroSlides([]); // تأكد من تفريغ المصفوفة إذا لم توجد بيانات
+        return;
+      }
+
+      const formattedSlides = data.map((product, index) => {
+        // 1. تحديد رابط الصورة الأساسي
+        const baseUrl = "http://localhost:3000";
+
+        // 2. معالجة مسار الصورة بحذر
+        let imageUrl = '/placeholder.jpg'; // صورة افتراضية
+        if (product.images && product.images.length > 0 && product.images[0].url) {
+          // إزالة أي تكرار محتمل للـ slash
+          const cleanPath = product.images[0].url.startsWith('/')
+            ? product.images[0].url
+            : `/${product.images[0].url}`;
+
+          imageUrl = `${baseUrl}${cleanPath}`;
+        }
+
+        return {
+          id: `slide-${product.productId || index}-${index}`, // ID فريد لكل slide
+          image: imageUrl,
+          title: product.title || "No Title",
+          description: product.price ? `${Number(product.price).toLocaleString()} IQD` : '',
+          link: `/products/${product.productId}`,
+          buttonText: t('view_details') || "View Details"
+        };
+      });
+
+      console.log("✅ البيانات المنسقة للسلايدر:", formattedSlides);
+      setHeroSlides(formattedSlides);
+
+    } catch (error) {
+      console.error("❌ Error fetching hero slides:", error);
+    }
+  };
+
+
+
+
+
+  useEffect(() => {
+    loadingHeroSlides();
+  }, []);
+
+
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -440,10 +504,47 @@ export default function Home() {
     loadProducts();
   }, [filters, searchTerm]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+
+  }, []);
+
+
+
   return (
-    <Container sx={{ mt: 1, maxWidth: 'lg' }}>
-      <SearchBar onSearch={setSearchTerm} />
-      <Filters onFilterChange={handleFilterChange} />
+    <Container
+      maxWidth={false}
+      sx={{
+
+        mt: 8.1,
+        width: {
+          xs: "100%",
+          sm: "100%",
+          md: "100%",
+          lg: "100%",
+          xl: "100%",
+        }
+      }}>
+
+      <Box
+        sx={{ mb: 6 }}
+      >
+
+       
+        <HeroSlider slides={heroSlides} loading={loadingHero} />
+      </Box>
+
+      <Box>
+        
+        {/* <Filters onFilterChange={handleFilterChange} /> */}
+      </Box>
+
 
       {loading ? (
         <Container sx={{ mt: 6, textAlign: "center" }}>
@@ -456,10 +557,12 @@ export default function Home() {
       ) : (
         <>
           <Grid container spacing={3}>
-            {products.map((p) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={p.productId}>
-                <ProductCard product={p} />
-              </Grid>
+            {products.map((p, index) => (
+              <Grow in={true} timeout={(index * 800)} key={p.productId}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                  <ProductCard product={p} />
+                </Grid>
+              </Grow>
             ))}
           </Grid>
           {showCreateCta && (
@@ -477,4 +580,3 @@ export default function Home() {
     </Container>
   );
 }
-

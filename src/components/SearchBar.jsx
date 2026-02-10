@@ -24,7 +24,7 @@ export default function SearchBar({ onSearch }) {
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <SearchIcon color="primary" />
+              <SearchIcon color="" />
             </InputAdornment>
           ),
         }}

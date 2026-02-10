@@ -336,7 +336,7 @@ export default function Register() {
   };
 
   return (
-  <Container maxWidth="xs" sx={{ mt: 3, boxShadow: 20, border: 1, borderRadius: 8, p: 2 }}>
+  <Container maxWidth="xs" sx={{ mt: 10, boxShadow: 20, border: 1, borderRadius: 8, p: 2 }}>
     <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
       {t('register_title')}
     </Typography>

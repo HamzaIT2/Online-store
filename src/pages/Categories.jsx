@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
-import { Container, Grid, Card, CardActionArea, CardContent, Typography, Box, IconButton, Button, Popover } from "@mui/material";
+import { Container, Grid, Card, CardActionArea, CardContent, Typography, Box, IconButton, Button, Popover, Grow } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useNavigate } from "react-router-dom";
 import { t } from "../i18n";
-
+import Zoom from "@mui/material/Zoom";
 // Always-visible fallback tiles
 const FALLBACK_TILES = [
   { slug: 'c-electronics', title: 'إلكترونيات', image: '/cat-electronics.svg', subs: ['هواتف وملحقاتها', 'حواسيب ولابتوبات', 'سماعات وساعات ذكية', 'أجهزة منزلية'] },
@@ -77,6 +77,7 @@ export default function Categories() {
   };
 
   return (
+
     <Container sx={{ mt: 4 }}>
       <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
         {t('categories')}
@@ -170,9 +171,11 @@ export default function Categories() {
                   <Grid item size={{ xs: 12, sm: 6 }} key={id || `${openFor}-${idx}`}>
                     <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 10px 28px rgba(11,29,57,0.24)' }}>
                       <CardActionArea onClick={onClick}>
+                        <Zoom in={true} style={{ transitionDelay: `${idx * 200}ms` }} key={id || `${openFor}-${idx}`}>
                         <Box sx={{ p: 3, minHeight: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #e3f2fd 0%, #ffffff 100%)' }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: 'center' }}>{name}</Typography>
                         </Box>
+                        </Zoom>
                       </CardActionArea>
                     </Card>
                   </Grid>
@@ -190,5 +193,6 @@ export default function Categories() {
         })()}
       </Popover>
     </Container>
+    
   );
 }
