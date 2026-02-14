@@ -1,26 +1,30 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Alert 
+import {
+  Container,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
-
+import PasswordIcon from '@mui/icons-material/PasswordOutlined';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const [showPassword, setShowPassword] = useState(false);
   // جلب التوكن من الرابط
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token'); 
-  
+  const token = searchParams.get('token');
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -38,7 +42,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     setError('');
-    
+
     try {
       await axios.post('http://localhost:3000/api/v1/auth/reset-password', {
         token: token,
@@ -46,7 +50,7 @@ const ResetPassword = () => {
       });
 
       setMessage('تم تغيير كلمة المرور بنجاح! سيتم تحويلك لصفحة الدخول...');
-      
+
       // التوجيه التلقائي بعد 3 ثواني
       setTimeout(() => {
         navigate('/login');
@@ -83,22 +87,58 @@ const ResetPassword = () => {
             fullWidth
             name="password"
             label="كلمة المرور الجديدة"
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PasswordIcon sx={{ opacity: 0.6 }} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end" sx={{ mr: 0.5 }} >
+                  <IconButton onClick={() => setShowPassword((v) => !v)} edge="end"
+                    aria-label="toggle password visibility"
+                    sx={{ transform: "translateY(-1px)" }}
+                  >
+                    {showPassword ? <VisibilityOff sx={{ opacity: 0.6 }} /> : <Visibility sx={{ opacity: 0.6 }} />}
+                  </IconButton >
+                </InputAdornment>
+              ),
+            }}
+
           />
-          
+
           <TextField
             margin="normal"
             required
             fullWidth
             name="confirmPassword"
             label="تأكيد كلمة المرور"
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="confirmPassword"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PasswordIcon sx={{ opacity: 0.6 }} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end" sx={{ mr: 0.5 }} >
+                  <IconButton onClick={() => setShowPassword((v) => !v)} edge="end"
+                    aria-label="toggle password visibility"
+                    sx={{ transform: "translateY(-1px)" }}
+                  >
+                    {showPassword ? <VisibilityOff sx={{ opacity: 0.6 }} /> : <Visibility sx={{ opacity: 0.6 }} />}
+                  </IconButton >
+                </InputAdornment>
+              ),
+            }}
+            error={password.length > 0 && password.length < 6}
           />
 
           <Button

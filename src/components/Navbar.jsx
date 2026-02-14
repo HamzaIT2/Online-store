@@ -535,7 +535,7 @@ import HowToRegIcon from '@mui/icons-material/HowToReg';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useEffect, useState } from "react";
 import { getMyFavorites } from "../api/favoritesAPI";
-import { Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { t, toggleLang } from "../i18n";
 import { listChats } from "../api/messagesAPI";
@@ -544,10 +544,13 @@ import ContrastIcon from '@mui/icons-material/Contrast';
 import { styled } from '@mui/material/styles';
 import { CartIcon } from "./CartIcon";
 import ProfileDrawer from "./ProfileSidebar";
+import FilterDrawer from "../pages/FilterDrawer";
 
 import SearchIcon from '@mui/icons-material/Search';
-
 import TuneIcon from '@mui/icons-material/Tune';
+import HeroSlider from "./HeroSlider";
+
+
 
 
 
@@ -564,7 +567,7 @@ export default function Navbar() {
   // const canSell = !!token && (userType === 'seller' || userType === 'both'); // Unused variable
   const location = useLocation();
   // const isActive = (path) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path)); // Unused variable
-
+  const [searchParams] = useSearchParams();
   const [anchorProfile, setAnchorProfile] = useState(null);
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -573,6 +576,8 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(4);
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFilterOpen,setIsFilterOpen]=useState(false);
+ 
   // const openProfile = Boolean(anchorProfile); // Unused variable
 
   const leftLinks = [
@@ -600,6 +605,7 @@ export default function Navbar() {
   const handleCloseNavMenu = () => setAnchorElNav(null);
   const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
   const handleCloseUserMenu = () => setAnchorElUser(null);
+
 
 
 
@@ -732,6 +738,28 @@ export default function Navbar() {
     }
   };
 
+  const handleApplyFilter = (filterData) => {
+    const params = new URLSearchParams(searchParams);
+    
+    // 1. المحافظة
+    if (filterData.province) params.set('provinceId', filterData.province);
+    else params.delete('provinceId');
+
+    // 2. الحالة
+    if (filterData.condition && filterData.condition !== 'all') params.set('condition', filterData.condition);
+    else params.delete('condition');
+
+    // 3. السعر
+    if (filterData.priceRange) {
+        params.set('minPrice', filterData.priceRange[0]);
+        params.set('maxPrice', filterData.priceRange[1]);
+    }
+
+    // التنقل للرابط الجديد
+    navigate(`/?${params.toString()}`);
+  };
+
+
   return (
     <AppBar position="fixed" sx={{
       top: 0,
@@ -753,9 +781,9 @@ export default function Navbar() {
               color="inherit"
             >
               <MenuIcon />
-            </IconButton>
+            </IconButton> 
 
-            <Menu
+             <Menu
               id="menu-appbar"
               anchorEl={anchorElNav}
               anchorOrigin={{
@@ -800,7 +828,7 @@ export default function Navbar() {
                   </MenuItem>
                 ))}
 
-              {/* ------------ FIX: Changed Fragments <> to Arrays [] ------------ */}
+              
               {!token && [
                 <Divider key="mob-div-1" sx={{ borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />,
                 <MenuItem
@@ -876,11 +904,11 @@ export default function Navbar() {
                   <ListItemText>{t('logout')}</ListItemText>
                 </MenuItem>
               ]}
-              {/* ----------------------------------------------------------------- */}
+           
 
             </Menu>
-
-
+            
+            
 
           </Box>
 
@@ -892,6 +920,7 @@ export default function Navbar() {
             to="/"
             sx={{
               display: 'flex',
+              
               fontFamily: 'monospace',
               fontWeight: 700,
               letterSpacing: '.1rem',
@@ -953,6 +982,7 @@ export default function Navbar() {
                  
                  title="تصفية النتائج">
                      <IconButton
+                     onClick={() => setIsFilterOpen(true)} 
                      sx={{
                       ml:2,
                       color: '#000000',
@@ -961,7 +991,12 @@ export default function Navbar() {
                         bgcolor: '#ff0000'
                       }
                      }}
-                     onClick={() => setOpenFilterDrawer(true)} size="small"
+                    
+                  
+                    
+                    
+                     
+                     
                      >
                         <TuneIcon  />
                      </IconButton>
@@ -1141,6 +1176,11 @@ export default function Navbar() {
       <ProfileDrawer
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+      />
+      <FilterDrawer
+      open={isFilterOpen}
+      onClose={() => setIsFilterOpen(false)}
+      onApply={handleApplyFilter}
       />
     </AppBar>
 

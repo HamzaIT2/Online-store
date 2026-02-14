@@ -22,7 +22,7 @@ import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import VerifyOTP from "./pages/VerifyOTP";
 import ParticlesBackground from "./components/ParticlesBackground";
 import HeroSlider from "./components/HeroSlider";
-
+import Footer from "./components/Footer";
 export default function App() {
   const { darkMode } = useTheme();
   const lang = getLang();
@@ -104,6 +104,7 @@ export default function App() {
           {/* توجيه أي مسار غير معروف إلى الرئيسية */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Footer />
       </BrowserRouter>
     </MuiThemeProvider>
   );

@@ -1,125 +1,92 @@
 import React, { useState } from 'react';
-import {
-    Drawer, Box, Typography, Slider, FormControl, InputLabel, Select, MenuItem,
-    Button, Divider, RadioGroup, FormControlLabel, Radio, IconButton, Chip
-} from '@mui/material';
-import { Close, FilterList } from '@mui/icons-material';
-import { t } from '../i18n'; // تأكد من مسار الترجمة
+import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Slider, FormControl, InputLabel, Select, MenuItem, Button, IconButton, Slide, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import { Close, Tune } from '@mui/icons-material';
+import { t } from '../i18n';
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default function FilterDrawer({ open, onClose, onApply }) {
-    // القيم الافتراضية (يمكنك ربطها بالـ State القادمة من الأب)
-    const [priceRange, setPriceRange] = useState([0, 1000000]);
+    // القيم الافتراضية
+    const [priceRange, setPriceRange] = useState([0, 2000000]);
     const [condition, setCondition] = useState('all');
     const [province, setProvince] = useState('');
-    
-    // قائمة المحافظات (مثال)
+
     const provinces = [
-        { id: 1, name: 'بغداد' },
-        { id: 2, name: 'البصرة' },
-        { id: 3, name: 'أربيل' },
+        { id: 'p-baghdad', name: 'بغداد' },
+        { id: 'p-basra', name: 'البصرة' },
+        { id: 'p-erbil', name: 'أربيل' },
+        { id: 'p-najaf', name: 'النجف' }
     ];
 
+    // ✅ عند الضغط على تطبيق
     const handleApply = () => {
-        // إرسال البيانات للكومبوننت الأب لتنفيذ الفلترة
-        onApply({ priceRange, condition, province });
+        if (onApply) {
+            onApply({ priceRange, condition, province });
+        }
         onClose();
     };
 
+    // مسح الفلاتر
     const handleClear = () => {
-        setPriceRange([0, 1000000]);
+        setPriceRange([0, 2000000]);
         setCondition('all');
         setProvince('');
     };
 
     return (
-        <Drawer
-            anchor="right" // تفتح من اليمين (أو اليسار حسب اللغة)
-            open={open}
-            onClose={onClose}
-            PaperProps={{ sx: { width: 320, p: 2 } }}
-        >
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FilterList color="primary" />
-                    <Typography variant="h6" fontWeight="bold">تصفية النتائج</Typography>
+        <Dialog 
+        open={open}
+         onClose={onClose}
+          TransitionComponent={Transition}
+           fullWidth
+            maxWidth="xs"
+            
+            >
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <Tune color="primary" />
+                    <Typography variant="h6">{t('filter_search') || "تصفية"}</Typography>
                 </Box>
                 <IconButton onClick={onClose}><Close /></IconButton>
-            </Box>
+            </DialogTitle>
 
-            <Divider sx={{ mb: 3 }} />
-
-            {/* 1. السعر (Slider) */}
-            <Box sx={{ mb: 4 }}>
-                <Typography gutterBottom fontWeight="medium">نطاق السعر (د.ع)</Typography>
-                <Slider
-                    value={priceRange}
-                    onChange={(e, val) => setPriceRange(val)}
-                    valueLabelDisplay="auto"
-                    min={0}
-                    max={1000000}
-                    step={5000}
-                    sx={{ mt: 1 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                    <Typography variant="caption" color="text.secondary">{priceRange[0].toLocaleString()}</Typography>
-                    <Typography variant="caption" color="text.secondary">{priceRange[1].toLocaleString()}</Typography>
+            <DialogContent dividers>
+                {/* الحالة */}
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" fontWeight="bold">{t('condition') || "الحالة"}</Typography>
+                    <RadioGroup row value={condition} onChange={(e) => setCondition(e.target.value)}>
+                        <FormControlLabel value="all" control={<Radio />} label="الكل" />
+                        <FormControlLabel value="new" control={<Radio />} label="جديد" />
+                        <FormControlLabel value="used" control={<Radio />} label="مستعمل" />
+                    </RadioGroup>
                 </Box>
-            </Box>
 
-            {/* 2. الحالة (Condition) */}
-            <Box sx={{ mb: 4 }}>
-                <Typography gutterBottom fontWeight="medium">حالة المنتج</Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {['all', 'new', 'used'].map((type) => (
-                        <Chip 
-                            key={type}
-                            label={type === 'all' ? 'الكل' : type === 'new' ? 'جديد' : 'مستعمل'} 
-                            onClick={() => setCondition(type)}
-                            color={condition === type ? "primary" : "default"}
-                            variant={condition === type ? "filled" : "outlined"}
-                            clickable
-                        />
-                    ))}
+                {/* السعر */}
+                <Box sx={{ mb: 3, px: 1 }}>
+                    <Typography variant="subtitle2" fontWeight="bold">{t('price_range') || "السعر"}</Typography>
+                    <Slider value={priceRange} onChange={(_, v) => setPriceRange(v)} min={0} max={2000000} step={25000} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="caption">{priceRange[0].toLocaleString()}</Typography>
+                        <Typography variant="caption">{priceRange[1].toLocaleString()}</Typography>
+                    </Box>
                 </Box>
-            </Box>
 
-            {/* 3. المحافظة */}
-            <Box sx={{ mb: 4 }}>
+                {/* المحافظة */}
                 <FormControl fullWidth size="small">
-                    <InputLabel>المحافظة</InputLabel>
-                    <Select
-                        value={province}
-                        label="المحافظة"
-                        onChange={(e) => setProvince(e.target.value)}
-                    >
+                    <InputLabel>{t('province') || "المحافظة"}</InputLabel>
+                    <Select value={province} label="المحافظة" onChange={(e) => setProvince(e.target.value)}>
                         <MenuItem value=""><em>الكل</em></MenuItem>
-                        {provinces.map((p) => (
-                            <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-                        ))}
+                        {provinces.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
                     </Select>
                 </FormControl>
-            </Box>
+            </DialogContent>
 
-            {/* Footer Buttons */}
-            <Box sx={{ mt: 'auto', display: 'flex', gap: 2 }}>
-                <Button 
-                    variant="contained" 
-                    fullWidth 
-                    onClick={handleApply}
-                    sx={{ borderRadius: 2, py: 1.2 }}
-                >
-                    تطبيق الفلتر
-                </Button>
-                <Button 
-                    variant="outlined" 
-                    color="error"
-                    onClick={handleClear}
-                    sx={{ borderRadius: 2 }}
-                >
-                    مسح
-                </Button>
-            </Box>
-        </Drawer>
+            <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                <Button onClick={handleClear} color="error">{t('clear') || "مسح"}</Button>
+                <Button onClick={handleApply} variant="contained">{t('apply') || "تطبيق"}</Button>
+            </DialogActions>
+        </Dialog>
     );
 }
