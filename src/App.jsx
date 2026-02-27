@@ -17,12 +17,15 @@ import AddProduct from "./pages/AddProduct";
 import Cart from "./pages/Cart";
 import Favorites from "./pages/Favorites";
 import Chats from "./pages/Chats";
+import PaymentSuccess from "./pages/PaymentSuccess";
 // لاحقاً نضيف باقي الصفحات هنا (Register, Home, MyProducts ...)
 import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import VerifyOTP from "./pages/VerifyOTP";
 import ParticlesBackground from "./components/ParticlesBackground";
 import HeroSlider from "./components/HeroSlider";
 import Footer from "./components/Footer";
+import Offers from "./pages/Offers";
+import EditProduct from "./pages/EditProduct";
 export default function App() {
   const { darkMode } = useTheme();
   const lang = getLang();
@@ -48,7 +51,7 @@ export default function App() {
             //   ? "linear-gradient(180deg, #0a1424 0%, #0b1320 100%)"
             //   : "linear-gradient(180deg, #eef3ff 0%, #e3ebff 100%)",
             // backgroundAttachment: 'fixed',
-            backgroundColor:'transparent'
+            backgroundColor: 'transparent'
           },
         },
       },
@@ -85,7 +88,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/register" element={<Register />} />
-
+          <Route path="/offers" element={<Offers />} />
+          <Route path="/edit-product/:id" element={<EditProduct />} />
           <Route path="/" element={<Home />} />
           <Route
             path="/sso-callback"
@@ -100,6 +104,7 @@ export default function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/chats" element={<Chats />} />
+          <Route path="/payment/zain-cash/success" element={<PaymentSuccess />} />
 
           {/* توجيه أي مسار غير معروف إلى الرئيسية */}
           <Route path="*" element={<Navigate to="/" replace />} />

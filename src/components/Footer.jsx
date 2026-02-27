@@ -30,9 +30,9 @@ export default function Footer() {
                         <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: 'primary.main' }}>
                             {t('site_name')}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: 'grey.400', mb: 3, lineHeight: 1.8 }}>
+                        {/* <Typography variant="body2" sx={{ color: 'grey.400', mb: 3, lineHeight: 1.8 }}>
                             {t('footer_des')}
-                        </Typography>
+                        </Typography> */}
                         <Box sx={{ display: 'flex', gap: 1 }}>
                             <IconButton
                                 aria-label="Facebook"

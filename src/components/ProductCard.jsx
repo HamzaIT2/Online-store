@@ -6,7 +6,7 @@ import { t } from "../i18n";
 import axiosInstance from "../api/axiosInstance";
 import { useState, useEffect } from "react";
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
-
+import CountdownTimer from "./CountdownTimer";
 
 // Get current language
 const getCurrentLang = () => {
@@ -96,14 +96,28 @@ export default function ProductCard({ product }) {
     if (!src) return "/placeholder.svg";
     const hasProtocol = /^https?:\/\//i.test(src);
     if (hasProtocol) return src;
-    // Normalize uploads path to backend origin
+    // Normalize uploads path to use direct uploads path (not through API)
     if (src.startsWith("/uploads") || src.startsWith("uploads/")) {
       const path = src.startsWith("/") ? src : `/${src}`;
-      return apiOrigin ? `${apiOrigin}${path}` : path;
+      return `/uploads${path.replace('/uploads', '')}`;
     }
     return src;
   };
   const mainImage = resolveImageSrc();
+
+  // Responsive image sizes
+  const getImageSize = () => {
+    const width = window.innerWidth;
+    if (width < 768) {
+      return { width: 200, height: 200 }; // Mobile
+    } else if (width < 1024) {
+      return { width: 250, height: 250 }; // Tablet
+    } else {
+      return { width: 300, height: 300 }; // Desktop
+    }
+  };
+
+  const imageDimensions = getImageSize();
 
   const conditionKeyMap = {
     new: 'condition_new',
@@ -152,11 +166,12 @@ export default function ProductCard({ product }) {
       <Card
         sx={{
           width: "100%",
+          minHeight: { xs: 450, sm: 480, md: 500 }, // Minimum height for consistency
           borderRadius: 3,
           boxShadow: "0px 2px 8px rgba(0,0,0,0.1)",
           transition: "transform 0.3s",
           "&:hover": { transform: "scale(1.03)" },
-          
+
           display: "flex",
           flexDirection: "column",
         }}
@@ -165,19 +180,51 @@ export default function ProductCard({ product }) {
         tabIndex={0}
         aria-label={product?.title || 'View product details'}
       >
-        <CardMedia component="img" height="200" image={mainImage} alt={product?.title || 'Product'} />
+        <CardMedia
+          component="img"
+          sx={{
+            width: '100%',
+            height: { xs: 200, sm: 250, md: 300 }, // Responsive height
+            objectFit: 'cover',
+            borderRadius: '8px 8px 0 0',
+          }}
+          image={mainImage}
+          alt={product?.title || 'Product'}
+        />
 
-        <CardContent sx={{ flexGrow: 1 }}>
+        <CardContent sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 200 // Minimum content area height
+        }}>
 
-          
+          {product.offerExpiresAt && (
+            <CountdownTimer
+
+              targetDate={product.offerExpiresAt} />
+          )}
           <Typography variant="h7" fontWeight="bold" sx={{ mb: 1 }}>
-            {product?.title?.length>35 ? product?.title?.slice(0,35) + "...":product?.title}
+            {product?.title?.length > 35 ? product?.title?.slice(0, 35) + "..." : product?.title}
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {product?.description?.length > 180 ? product?.description?.slice(0, 180) + "..." : product?.description}  
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mt: 1,
+              minHeight: 60, // Fixed height for description area
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 3, // Show exactly 3 lines
+              WebkitBoxOrient: 'vertical',
+              lineHeight: 1.3
+            }}
+          >
+            {product?.description?.length > 150 ? product?.description?.slice(0, 150) + "..." : product?.description}
           </Typography>
-          
+
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {provinceName} {provinceName && conditionLabel ? "-" : ""} {conditionLabel}
           </Typography>
@@ -194,17 +241,18 @@ export default function ProductCard({ product }) {
             </Box>
             {product?.productId && <FavoriteToggle productId={product.productId} size="small" />}
           </Box>
+
         </CardContent>
 
         <Box sx={{ textAlign: "center", pb: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-evenly', flexWrap: 'wrap' }}>
-           
-           
-           
-            <Button 
-            variant="outlined" 
-            color="primary" 
-            onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>
+
+
+
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>
               <AddShoppingCartIcon />
             </Button>
 
@@ -212,11 +260,11 @@ export default function ProductCard({ product }) {
 
 
 
-            <Button 
-            variant="contained" 
-            color="error" 
-            onClick={(e) => { e.stopPropagation(); handleDetails(); }}>
-            {t('view_details')}
+            <Button
+              variant="contained"
+              color="error"
+              onClick={(e) => { e.stopPropagation(); handleDetails(); }}>
+              {t('buy_now')}
             </Button>
             <ProductCardChatButton
               sellerId={product?.userId || product?.sellerId}
@@ -229,12 +277,12 @@ export default function ProductCard({ product }) {
 
 
 
-    
-      <Snackbar 
-      open={snackbarOpen} 
-      autoHideDuration={800} 
-      onClose={() => setSnackbarOpen(false)} 
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={800}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
           {t('added_to_cart') || 'تمت الإضافة إلى السلة'}
         </Alert>

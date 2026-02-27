@@ -29,7 +29,7 @@ export default function Home() {
     condition: "",
     priceRange: [1000, 2000000],
   });
-  
+
   const [heroSlides, setHeroSlides] = useState([]);
   const [loadingHero, setLoadingHero] = useState(true);
   const [scrollY, setScrollY] = useState(0);
@@ -58,16 +58,24 @@ export default function Home() {
       }
 
       const formattedSlides = data.map((product, index) => {
-        // 1. تحديد رابط الصورة الأساسي
-        const baseUrl = "http://localhost:3000";
+        // 1. تحديد رابط الصورة الأساسي - استخدام مسار uploads مباشر
+        const baseUrl = "/uploads";
 
         // 2. معالجة مسار الصورة بحذر
         let imageUrl = '/placeholder.jpg'; // صورة افتراضية
         if (product.images && product.images.length > 0 && product.images[0].url) {
-          // إزالة أي تكرار محتمل للـ slash
-          const cleanPath = product.images[0].url.startsWith('/')
-            ? product.images[0].url
-            : `/${product.images[0].url}`;
+          // إزالة أي تكرار محتمل للـ slash وتنظيف المسار
+          let cleanPath = product.images[0].url;
+          if (cleanPath.startsWith('/uploads/')) {
+            cleanPath = cleanPath.replace('/uploads', '');
+          } else if (cleanPath.startsWith('uploads/')) {
+            cleanPath = cleanPath.replace('uploads', '');
+          }
+
+          // التأكد من أن المسار يبدأ بـ /
+          if (!cleanPath.startsWith('/')) {
+            cleanPath = `/${cleanPath}`;
+          }
 
           imageUrl = `${baseUrl}${cleanPath}`;
         }
@@ -431,7 +439,7 @@ export default function Home() {
         list = list.filter(p => {
           const catFilter = String(filters.category).toLowerCase();
           const pCategoryId = String(p.categoryId ?? p.categoryID ?? p.category_id ?? '').toLowerCase();
-          const pCategoryName = (p.categoryName ?? p.category ?? '').toLowerCase();
+          const pCategoryName = String(p.categoryName ?? p.category ?? '').toLowerCase();
 
           // إذا كانت الفئة رقمية
           if (isNumeric(filters.category)) {
@@ -536,12 +544,12 @@ export default function Home() {
         sx={{ mb: 6 }}
       >
 
-       
+
         <HeroSlider slides={heroSlides} loading={loadingHero} />
       </Box>
 
       <Box>
-        
+
         {/* <Filters onFilterChange={handleFilterChange} /> */}
       </Box>
 
@@ -556,10 +564,13 @@ export default function Home() {
         </Typography>
       ) : (
         <>
-          <Grid container spacing={3}>
+          <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
             {products.map((p, index) => (
               <Grow in={true} timeout={(index * 800)} key={p.productId}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid
+                  size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+                  sx={{ display: 'flex' }}
+                >
                   <ProductCard product={p} />
                 </Grid>
               </Grow>

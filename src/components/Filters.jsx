@@ -137,22 +137,7 @@ export default function Filters({ onFilterChange }) {
           ))}
         </TextField>
 
-        {/* Price slider */}
-        {/* <Box sx={{ width: '100%', px: 30, alignSelf: 'stretch', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-          <Typography variant="body2" sx={{ color: 'text.primary', mb: 3, marginRight: 5 }}>
-            {t('price_label')}
-          </Typography>
-          <Slider
-            value={filters.priceRange}
-            onChange={(_, v) => handleChange('priceRange', v)}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(val) => Number(val).toLocaleString()}
-            min={1000}
-            max={2000000}
-            step={1000}
-            disableSwap
-          />
-        </Box> */}
+        
       </Box>
 
 
