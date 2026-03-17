@@ -79,7 +79,7 @@ const ProductCardChatButton = ({ sellerId, productId, productName, className }) 
 
       variant="outlined"
       size="small"
-    
+
       onClick={handleStartChat}
       className={className}
       sx={{

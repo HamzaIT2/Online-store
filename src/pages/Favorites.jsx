@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Container, Typography, Grid, CircularProgress, Divider, Box } from "@mui/material";
-import { Card, CardContent, CardActions, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import { Container, Typography, Grid, CircularProgress, Divider, Box, Button } from "@mui/material";
 import axiosInstance from '../api/axiosInstance';
 import { getMyFavorites } from "../api/favoritesAPI";
 import ProductCard from "../components/ProductCard";
+import ProductSkeleton from "../components/ProductSkeleton";
+import EmptyState from "../components/EmptyState";
 import { t } from "../i18n";
 
 export default function Favorites() {
@@ -18,7 +16,6 @@ export default function Favorites() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const [loadingMyAds, setLoadingMyAds] = useState(false);
   const [myAds, setMyAds] = useState([]);
   const navigate = useNavigate();
 
@@ -96,7 +93,10 @@ export default function Favorites() {
   const handleDeleteCancel = () => { setConfirmOpen(false); setToDelete(null); };
 
   if (loading) return (
-    <Container sx={{ textAlign: 'center', mt: 6 }}><CircularProgress /></Container>
+    <Container sx={{ mt: 4 }}>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, textAlign: 'right' }}>{t('favorites')}</Typography>
+      <ProductSkeleton count={8} />
+    </Container>
   );
 
   if (error) return (
@@ -106,51 +106,35 @@ export default function Favorites() {
   );
 
   return (
-    <Container sx={{ mt: 12 }}>
-      {/* <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, textAlign: 'right' }}>{t('my_ads') || 'My Ads'}</Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddProduct}>{t('add_product') || 'أضف إعلان'}</Button>
+    <Container sx={{ mt: 4, mb: 8, minHeight: '70vh' }}>
+      <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, textAlign: 'right' }}>{t('favorites')}</Typography>
+
+      {loading ? (
+        <ProductSkeleton count={8} />
+      ) : error ? (
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
+          <Button variant="outlined" onClick={() => window.location.reload()}>
+            إعادة المحاولة
+          </Button>
         </Box>
-        {loadingMyAds ? (
-          <CircularProgress size={20} />
-        ) : (!myAds || !myAds.length) ? (
-          <Typography color="text.secondary">{t('no_my_ads') || 'لا توجد إعلانات'}</Typography>
-        ) : (
-          <Grid container spacing={3}>
-            {myAds.map((p) => (
-              <Grid item xs={12} sm={6} md={4} key={(p.id || p._id || p.productId)}>
-                <Card>
-                  <CardContent>
-                    <ProductCard product={p} />
-                  </CardContent>
-                  <CardActions>
-                    <IconButton aria-label="edit" onClick={() => handleEdit(p)}><EditIcon /></IconButton>
-                    <IconButton aria-label="delete" onClick={() => handleDeleteClick(p)}><DeleteIcon /></IconButton>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
-
-      <Divider sx={{ my: 4 }} /> */}
-
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('favorites') || 'المفضلات'}</Typography>
-        {(!items || !items.length) ? (
-          <Typography align="center">{t('favorites_empty') || 'لا توجد عناصر مفضلة'}</Typography>
-        ) : (
-          <Grid container spacing={3}>
-            {items.map((p) => (
-              <Grid item xs={12} sm={6} md={4} key={p.productId}>
-                <ProductCard product={p} />
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
+      ) : !items || items.length === 0 ? (
+        <EmptyState
+          type="favorites"
+          title={t('favorites_empty') || 'لا توجد عناصر مفضلة'}
+          description="ابدأ بإضافة المنتجات التي تعجبك إلى المفضلة لتسهيل الوصول إليها لاحقاً"
+          actionText="تسوق الآن"
+          actionLink="/"
+        />
+      ) : (
+        <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+          {items.map((p) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={p.productId}>
+              <ProductCard product={p} />
+            </Grid>
+          ))}
+        </Grid>
+      )}
     </Container>
   );
 }

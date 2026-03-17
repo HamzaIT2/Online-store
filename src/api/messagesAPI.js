@@ -27,5 +27,19 @@ export const createOrGetChat = async ({ sellerId, productId, orderId }) => {
 
 export const sendMessage = async (chatId, payload) => {
   // payload: { type: 'text'|'image', text?, imageUrl? }
-  return axiosInstance.post(`/chats/${chatId}/messages`, payload);
+  console.log('API sendMessage called:', {
+    chatId,
+    payload,
+    fullUrl: `/chats/${chatId}/messages`
+  });
+  
+  try {
+    const response = await axiosInstance.post(`/chats/${chatId}/messages`, payload);
+    console.log('API sendMessage response:', response);
+    return response;
+  } catch (error) {
+    console.error('API sendMessage error:', error);
+    console.error('Error response data:', error.response?.data);
+    throw error;
+  }
 };

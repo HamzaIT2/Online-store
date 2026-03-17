@@ -3,6 +3,7 @@ import { Container, Typography, Grid, Card, CardContent, CardMedia, Box, Button,
 import axiosInstance from "../api/axiosInstance";
 import { t } from "../i18n";
 import PaymentModal from "../components/PaymentModal";
+import EmptyState from "../components/EmptyState";
 import { useNavigate } from "react-router-dom";
 import { Visibility, ShoppingCart, Delete } from "@mui/icons-material";
 
@@ -117,8 +118,8 @@ export default function Cart() {
   };
 
   return (
-    <Container sx={{ mt: 9 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Container sx={{ mt: 4, mb: 8, minHeight: '70vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>{t('cart') || 'سلة المشتريات'}</Typography>
         {items.length > 0 && (
           <Button color="error" variant="outlined" onClick={clearAll}>{t('clear') || 'تفريغ السلة'}</Button>
@@ -126,7 +127,13 @@ export default function Cart() {
       </Box>
 
       {items.length === 0 ? (
-        <Typography color="text.secondary">{t('cart_empty') || 'لم يتم إضافة منتجات إلى السلة بعد.'}</Typography>
+        <EmptyState
+          type="cart"
+          title={t('cart_empty') || 'سلتك فارغة'}
+          description="أضف بعض المنتجات الرائعة إلى سلتك وابدأ رحلة التسوق"
+          actionText="تسوق الآن"
+          actionLink="/"
+        />
       ) : (
         <>
           {/* Cart Items */}

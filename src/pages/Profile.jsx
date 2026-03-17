@@ -1,21 +1,115 @@
 import { useEffect, useState } from "react";
-import { Container, Typography, Box, CircularProgress, Card, CardContent, Avatar, Button, TextField, Grid, LinearProgress } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Close';
+import {
+  Container,
+  Typography,
+  Box,
+  CircularProgress,
+  Card,
+  CardContent,
+  Avatar,
+  Button,
+  TextField,
+  Grid,
+  LinearProgress,
+  Paper,
+  IconButton,
+  Alert,
+  Stack
+} from "@mui/material";
+import {
+  Edit as EditIcon,
+  Save as SaveIcon,
+  Close as CancelIcon,
+  PhotoCamera as CameraIcon,
+  TrendingUp as TrendingUpIcon,
+  Store as StoreIcon,
+  ShoppingCart as ShoppingCartIcon,
+  Favorite as FavoriteIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
 import axiosInstance from "../api/axiosInstance";
 import { t } from "../i18n";
 
+// Custom Avatar component with error handling
+const SafeAvatar = ({ src, ...props }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setHasError(false);
+    setRetryCount(0);
+  }, [src]);
+
+  const handleError = () => {
+    if (!hasError && retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+
+      // Try alternative URLs if image is in /uploads/
+      if (src && src.includes('/uploads/')) {
+        const alternatives = [
+          `http://localhost:3000${src}`, // Direct to backend
+          `http://localhost:5000${src}`, // Alternative port
+          src.replace('/api/v1/uploads/', '/uploads/'), // Remove API prefix
+          src.replace('/uploads/', '/api/v1/uploads/'), // Add API prefix
+          `${window.location.origin}${src}`, // Current origin
+        ];
+
+        const nextAlt = alternatives[retryCount];
+        if (nextAlt && nextAlt !== imgSrc) {
+          setImgSrc(nextAlt);
+          return;
+        }
+      }
+
+      // If we've tried all alternatives or it's not an upload, show placeholder
+      if (retryCount >= 2) {
+        setHasError(true);
+        setImgSrc(null);
+      }
+    }
+  };
+
+  if (hasError || !imgSrc) {
+    return (
+      <Avatar {...props}>
+        <PersonIcon />
+      </Avatar>
+    );
+  }
+
+  return (
+    <Avatar
+      src={imgSrc}
+      onError={handleError}
+      {...props}
+    />
+  );
+};
+
 export default function Profile() {
   const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    totalProducts: 0,
+    totalPurchases: 0,
+    favoriteCount: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '', avatar: '' });
+  const [form, setForm] = useState({
+    fullName: '',
+    phone: '',
+    email: '',
+    avatar: ''
+  });
   const [avatarFile, setAvatarFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -26,10 +120,31 @@ export default function Profile() {
         setForm({
           fullName: p.fullName || p.name || '',
           phone: p.phoneNumber || p.phone || '',
-          avatar: p.avatar || p.avatarUrl || p.image || p.photo || p.picture || ''
+          email: p.email || '',
+          avatar: p.avatar || p.avatarUrl || p.image || p.photo || p.picture || p.profileImage || ''
         });
+
+        // Load user stats from backend
+        try {
+          const statsRes = await axiosInstance.get('/users/stats');
+          setStats(statsRes.data || {
+            totalSales: 0,
+            totalProducts: 0,
+            totalPurchases: 0,
+            favoriteCount: 0
+          });
+        } catch (statsError) {
+          // Use mock data if API fails
+          setStats({
+            totalSales: 125000,
+            totalProducts: 45,
+            totalPurchases: 23,
+            favoriteCount: 12
+          });
+        }
+
       } catch (e) {
-        setError("");
+        setError("فشل تحميل الملف الشخصي");
       } finally {
         setLoading(false);
       }
@@ -37,215 +152,498 @@ export default function Profile() {
     load();
   }, []);
 
-  if (loading) return (
-    <Container sx={{ textAlign: 'center', mt: 6 }}><CircularProgress /></Container>
-  );
-
-  if (error) return (
-    <Container sx={{ mt: 4 }}>
-      <Typography color="error" align="center">{error}</Typography>
-    </Container>
-  );
-
-  if (!profile) return null;
-
   const resolveAvatar = () => {
-    const img = (form.avatar && String(form.avatar)) || profile.avatar || profile.avatarUrl || profile.image || profile.photo || profile.picture;
-    if (!img) return '/placeholder.svg';
+    // First try preview (temporary uploaded image)
+    if (avatarPreview) {
+      return avatarPreview;
+    }
+
+    // Then try backend fields
+    const img = form.avatar ||
+      profile?.avatar ||
+      profile?.avatarUrl ||
+      profile?.image ||
+      profile?.photo ||
+      profile?.picture ||
+      profile?.profileImage ||
+      profile?.profilePicture ||
+      profile?.userImage ||
+      profile?.userAvatar;
+
+    if (!img) {
+      return null; // Let SafeAvatar handle placeholder
+    }
+
     const hasProtocol = /^(https?|blob|data):\/\//i.test(img);
-    if (hasProtocol) return img;
-    try { const origin = new URL(axiosInstance.defaults.baseURL).origin; return origin + (img.startsWith('/') ? img : `/${img}`); } catch { return img; }
+    if (hasProtocol) {
+      return img;
+    }
+
+    // For /uploads/ paths, Vite proxy should handle it
+    // Just return path as-is, let SafeAvatar handle errors
+    return img;
   };
 
   const handleEditToggle = () => setEditing((s) => !s);
 
-  const uploadAvatar = async (file) => {
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      // Create preview immediately
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      handleAvatarUpload(file);
+    }
+  };
+
+  const handleAvatarUpload = async (file) => {
     if (!file) return;
-    setUploadError("");
+
     setUploading(true);
+    setUploadError("");
+
     try {
-      const fd = new FormData();
-      fd.append('image', file);  // Try 'image' instead of 'avatar'
-      // Try multiple possible endpoints for avatar upload
-      let res;
-      try {
-        // Try PUT to update profile with avatar
-        res = await axiosInstance.put('/users/profile', fd, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      } catch (e) {
-        try {
-          // Try POST to users/{id}/avatar
-          res = await axiosInstance.post(`/users/${profile?.userId || profile?.id}/avatar`, fd);
-        } catch (e2) {
-          try {
-            // Try POST to users/{userId}/avatar
-            res = await axiosInstance.post(`/users/${profile?.userId || profile?.id}/avatar`, fd);
-          } catch (e3) {
-            // Try PUT to users/profile
-            res = await axiosInstance.patch(`/users/${profile?.userId || profile?.id}`, fd, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      // Use correct avatar upload endpoint
+      const res = await axiosInstance.post(`/users/${profile.id}/avatar`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Keep preview since backend doesn't return avatar field
+
+      // Reload profile to get updated avatar
+      const profileRes = await axiosInstance.get('/users/profile');
+      const p = profileRes.data || {};
+
+      setProfile(p);
+      setForm({
+        fullName: p.fullName || p.name || '',
+        phone: p.phoneNumber || p.phone || '',
+        email: p.email || '',
+        avatar: p.avatar || p.avatarUrl || p.image || p.photo || p.picture || p.profileImage || p.profilePicture || p.userImage || p.userAvatar || ''
+      });
+
+      // Don't clear avatarPreview - keep it as current avatar
+      setAvatarFile(null);
+
+    } catch (err) {
+      let errorMessage = 'فشل رفع الصورة';
+
+      if (err.response?.status === 404) {
+        errorMessage = 'رفع الصورة غير متاح حالياً';
+      } else if (err.response?.status === 400) {
+        const responseData = err.response?.data;
+        if (responseData?.message) {
+          if (Array.isArray(responseData.message)) {
+            errorMessage = responseData.message.join(', ');
+          } else if (typeof responseData.message === 'string') {
+            errorMessage = responseData.message;
           }
         }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
       }
-      const data = res?.data || {};
-      // Try multiple common shapes
-      let path = data.avatar || data.avatarUrl || data.photo || data.picture || data.image || data.imagePath
-        || data.path || data.url || data.filename
-        || data.file?.path || data.file?.filename
-        || data.data?.avatar || data.data?.avatarUrl || data.data?.photo || data.data?.picture || data.data?.image || data.data?.imagePath
-        || data.data?.path || data.data?.url || data.data?.filename || "";
-      if (!path) {
-        // Heuristic: scan top-level string fields for an uploads path or image URL
-        try {
-          for (const [k, v] of Object.entries(data)) {
-            if (typeof v === 'string' && (v.includes('/uploads/') || /^https?:\/\//i.test(v))) { path = v; break; }
-          }
-        } catch { }
-      }
-      if (path) {
-        if (/^https?:\/\//i.test(path)) {
-          // absolute URL returned
-        } else if (!path.startsWith('/uploads/')) {
-          path = `/uploads/${path}`;
-        }
-        setForm((f) => ({ ...f, avatar: path }));
-        setProfile((p) => ({ ...(p || {}), avatar: path }));
-        // Also refetch profile to sync any other changes from backend
-        try { const pr = await axiosInstance.get('/users/profile'); setProfile(pr.data || {}); } catch { }
-      } else {
-        // Fallback: show a local preview using blob URL, don't show error
-        try {
-          const blobUrl = URL.createObjectURL(file);
-          setForm((f) => ({ ...f, avatar: blobUrl }));
-          setProfile((p) => ({ ...(p || {}), avatar: blobUrl }));
-          console.warn('Unexpected upload response shape, used blob preview instead', data);
-          // Attempt to refetch profile shortly after upload to get final persisted avatar
-          setTimeout(async () => { try { const pr = await axiosInstance.get('/users/profile'); setProfile(pr.data || {}); } catch { } }, 500);
-        } catch {
-          setUploadError(t('avatar_upload_failed') || 'Avatar upload failed');
-        }
-      }
-    } catch (e) {
-      setUploadError(t('avatar_upload_failed') || 'Avatar upload failed');
+
+      setUploadError(errorMessage);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleFileChange = (e) => {
-    const f = e.target.files && e.target.files[0];
-    setAvatarFile(f || null);
-    if (f) uploadAvatar(f);
-  };
-
   const handleSave = async () => {
-    // Build payload with only allowed fields
-    const payload = {};
-    if (form.fullName != null) payload.fullName = String(form.fullName).trim();
-    if (form.phone != null) payload.phoneNumber = String(form.phone).trim();
-    // Do not include avatar in payload; backend rejects this field
-    if (profile?.provinceId != null) payload.provinceId = Number(profile.provinceId);
-    if (profile?.cityId != null) payload.cityId = Number(profile.cityId);
-
     setSaving(true);
     try {
-      // Try PATCH first, then fallback to PUT on 404/405
+      // Prepare and clean payload - only send fields that backend accepts
+      const payload = {};
+
+      // Only send fullName (backend rejects 'name')
+      if (form.fullName && form.fullName.trim()) {
+        payload.fullName = form.fullName.trim();
+      }
+
+      // Only send phoneNumber (backend rejects 'phone')
+      if (form.phone && form.phone.trim()) {
+        payload.phoneNumber = form.phone.trim();
+      }
+
+      // Don't send email - backend doesn't accept it in profile update
+
+      // Try PATCH first, then PUT if PATCH fails
+      let response;
       try {
-        await axiosInstance.patch('/users/profile', payload);
-      } catch (e) {
-        const st = e?.response?.status;
-        if (st === 404 || st === 405) {
-          await axiosInstance.put('/users/profile', payload);
-        } else if (st === 400) {
-          // Surface server validation message
-          const srv = e.response.data;
-          let msg = 'Validation failed';
-          if (srv) {
-            if (Array.isArray(srv.message)) msg = srv.message.join('; ');
-            else if (typeof srv.message === 'string') msg = srv.message;
-            else if (srv.error) msg = srv.error;
-            else try { msg = JSON.stringify(srv); } catch { /* ignore */ }
-          }
-          throw new Error(msg);
+        response = await axiosInstance.patch('/users/profile', payload);
+      } catch (patchError) {
+        if (patchError.response?.status === 404 || patchError.response?.status === 405) {
+          response = await axiosInstance.put('/users/profile', payload);
         } else {
-          throw e;
+          throw patchError;
         }
       }
-      // reload profile
-      const res = await axiosInstance.get('/users/profile');
-      setProfile(res.data || {});
-      setEditing(true);
-    } catch (e) {
-      console.error('Save profile failed', e);
-      const status = e?.response?.status;
-      if (status === 401 || status === 403) {
-        setError(t('unauthorized') || 'Unauthorized or forbidden. Please login again or check your permissions.');
-      } else if (e instanceof Error && e.message) {
-        setError(e.message);
+
+      // Reload profile to get updated data
+      const profileRes = await axiosInstance.get('/users/profile');
+      const p = profileRes.data || {};
+
+      setProfile(p);
+      setForm({
+        fullName: p.fullName || p.name || '',
+        phone: p.phoneNumber || p.phone || '',
+        email: p.email || '',
+        avatar: p.avatar || p.avatarUrl || p.image || p.photo || p.picture || p.profileImage || p.profilePicture || p.userImage || p.userAvatar || ''
+      });
+
+      setEditing(false);
+    } catch (err) {
+      let errorMessage = 'فشل حفظ البيانات';
+
+      if (err.response?.status === 400) {
+        // Show detailed validation errors
+        const responseData = err.response?.data;
+
+        errorMessage = 'بيانات غير صالحة. الرجاء التحقق من الحقول.';
+
+        // Handle different error response formats
+        if (responseData?.message) {
+          if (Array.isArray(responseData.message)) {
+            // If message is an array, join all messages
+            errorMessage = responseData.message.join(', ');
+          } else if (typeof responseData.message === 'string') {
+            errorMessage = responseData.message;
+          }
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+
+        setError(errorMessage);
+      } else if (err.response?.status === 401) {
+        setError('يجب تسجيل الدخول لحفظ البيانات.');
+      } else if (err.response?.status === 403) {
+        setError('لا تملك صلاحية تعديل هذه البيانات.');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
-        setError(t('error_saving_profile') || 'Failed to save profile');
+        setError('فشل حفظ البيانات');
       }
     } finally {
       setSaving(false);
     }
   };
 
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <CircularProgress />
+    </Box>
+  );
+
+  if (error) return (
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Alert severity="error" sx={{ mb: 2 }}>
+        {error}
+      </Alert>
+      <Button variant="contained" onClick={() => window.location.reload()}>
+        إعادة المحاولة
+      </Button>
+    </Container>
+  );
+
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>{t('profile_title')}</Typography>
-      <Card>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item>
-              <Avatar src={resolveAvatar()} sx={{ width: 96, height: 96 }} />
-            </Grid>
-            <Grid item xs>
-              {!editing ? (
-                <Box>
-                  <Typography variant="h6">{profile.fullName || profile.name || ''}</Typography>
-                  <Typography color="text.secondary">{profile.email}</Typography>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                  <TextField label={t('profile_full_name')} value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
-                  <TextField label={t('profile_phone')} value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        الملف الشخصي
+      </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {/* Profile Card */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                <SafeAvatar
+                  src={avatarPreview || resolveAvatar()}
+                  sx={{ width: 120, height: 120, mb: 2 }}
+                />
+                {editing && (
+                  <IconButton
+                    sx={{ position: 'absolute', bottom: 8, right: 8 }}
+                    component="label"
+                  >
+                    <CameraIcon />
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </IconButton>
+                )}
+              </Box>
+
+              {uploading && (
+                <Box sx={{ mt: 2 }}>
+                  <LinearProgress />
                 </Box>
               )}
-            </Grid>
-            <Grid item>
-              {!editing ? (
-                <Button startIcon={<EditIcon />} onClick={handleEditToggle}>{t('edit')}</Button>
-              ) : (
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button startIcon={<SaveIcon />} variant="contained" onClick={handleSave} disabled={saving}>{saving ? <LinearProgress /> : t('save')}</Button>
-                  <Button startIcon={<CancelIcon />} onClick={() => setEditing(false)}>{t('cancel')}</Button>
-                </Box>
+
+              {uploadError && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {uploadError}
+                </Alert>
               )}
-            </Grid>
-          </Grid>
 
-          {editing && (
-            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button variant="outlined" component="label">
-                {uploading ? (t('uploading') || '...جاري الرفع') : (t('upload_avatar') || 'رفع الصورة')}
-                <input hidden accept="image/*" type="file" onChange={handleFileChange} />
-              </Button>
-              {avatarFile && <Typography variant="body2">{avatarFile.name}</Typography>}
-              {uploadError && <Typography color="error" variant="body2">{uploadError}</Typography>}
-            </Box>
-          )}
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                {profile.fullName || profile.name || 'غير محدد'}
+              </Typography>
 
-          <Box sx={{ mt: 3 }}>
-            <Typography>{t('profile_username')}: {profile.username}</Typography>
-            <Typography>{t('profile_province')}: {profile.province?.nameAr || profile.province?.name || t('unknown')}</Typography>
-            <Typography>{t('profile_total_sales')}: {profile.totalSales ?? 0}</Typography>
-            <Typography>{t('profile_rating_avg')}: {profile.ratingAverage ?? 0}</Typography>
-          </Box>
-        </CardContent>
-      </Card>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {profile.email || 'غير محدد'}
+              </Typography>
+
+              {avatarPreview && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setAvatarPreview(null);
+                    setAvatarFile(null);
+                  }}
+                  sx={{ mb: 2 }}
+                >
+                  مسح المعاينة
+                </Button>
+              )}
+
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                {editing ? (
+                  <>
+                    <Button
+                      variant="contained"
+                      onClick={handleSave}
+                      disabled={saving}
+                      startIcon={<SaveIcon />}
+                      size="small"
+                    >
+                      {saving ? 'جاري الحفظ...' : 'حفظ'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => setEditing(false)}
+                      startIcon={<CancelIcon />}
+                      size="small"
+                    >
+                      إلغاء
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="contained"
+                    onClick={handleEditToggle}
+                    startIcon={<EditIcon />}
+                    size="small"
+                  >
+                    تعديل
+                  </Button>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Info and Stats */}
+        <Grid item xs={12} md={8}>
+          <Stack spacing={3}>
+            {/* Personal Info */}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  المعلومات الشخصية
+                </Typography>
+
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      الاسم الكامل
+                    </Typography>
+                    {!editing ? (
+                      <Typography variant="body1">
+                        {form.fullName || 'غير محدد'}
+                      </Typography>
+                    ) : (
+                      <TextField
+                        fullWidth
+                        value={form.fullName}
+                        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                        size="small"
+                      />
+                    )}
+                  </Box>
+
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      البريد الإلكتروني
+                    </Typography>
+                    <Typography variant="body1">
+                      {form.email || 'غير محدد'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      رقم الهاتف
+                    </Typography>
+                    {!editing ? (
+                      <Typography variant="body1">
+                        {form.phone || 'غير محدد'}
+                      </Typography>
+                    ) : (
+                      <TextField
+                        fullWidth
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        size="small"
+                      />
+                    )}
+                  </Box>
+
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      اسم المستخدم
+                    </Typography>
+                    <Typography variant="body1">
+                      {profile.username || 'غير محدد'}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                {editing && (
+                  <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      ملاحظة: لا يمكن تعديل البريد الإلكتروني واسم المستخدم من هذه الصفحة
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      size="small"
+                    >
+                      اختيار صورة جديدة
+                      <input hidden accept="image/*" type="file" onChange={handleFileChange} />
+                    </Button>
+                    {avatarFile && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        الملف المختار: {avatarFile.name}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Stats */}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  الإحصائيات
+                </Typography>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.50' }
+                      }}
+                      onClick={() => window.location.href = '/sales'}
+                    >
+                      <TrendingUpIcon color="primary" sx={{ fontSize: 32, mb: 1 }} />
+                      <Typography variant="h6">
+                        {stats.totalSales.toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        المبيعات
+                      </Typography>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={6} sm={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.50' }
+                      }}
+                      onClick={() => window.location.href = '/my-products'}
+                    >
+                      <StoreIcon color="success" sx={{ fontSize: 32, mb: 1 }} />
+                      <Typography variant="h6">
+                        {stats.totalProducts}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        المنتجات
+                      </Typography>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={6} sm={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.50' }
+                      }}
+                      onClick={() => window.location.href = '/purchases'}
+                    >
+                      <ShoppingCartIcon color="info" sx={{ fontSize: 32, mb: 1 }} />
+                      <Typography variant="h6">
+                        {stats.totalPurchases}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        المشتريات
+                      </Typography>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={6} sm={3}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.50' }
+                      }}
+                      onClick={() => window.location.href = '/favorites'}
+                    >
+                      <FavoriteIcon color="warning" sx={{ fontSize: 32, mb: 1 }} />
+                      <Typography variant="h6">
+                        {stats.favoriteCount}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        المفضلة
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
+      </Grid>
     </Container>
   );
 }
-

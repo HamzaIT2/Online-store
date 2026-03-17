@@ -13,19 +13,32 @@ import {
   StepContent,
   Paper,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Avatar,
+  Chip,
+  Divider,
+  useTheme,
+  alpha
 } from '@mui/material';
 import {
   CheckCircle,
   Error,
   Home,
   Receipt,
-  LocalShipping
+  LocalShipping,
+  ShoppingBag,
+  LocalShipping as Truck,
+  Inventory,
+  Headphones,
+  Timeline,
+  Payment,
+  Refresh
 } from '@mui/icons-material';
-import { green } from '@mui/material/colors';
+import { green, purple, orange, blue } from '@mui/material/colors';
 import ZainCashProvider from '../services/zainCashProvider';
 
 const PaymentSuccess = () => {
+  const theme = useTheme();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [verifying, setVerifying] = useState(true);
@@ -107,21 +120,56 @@ const PaymentSuccess = () => {
   };
 
   const handleViewOrder = () => {
-    // Since orders page doesn't exist, redirect to profile or cart
     navigate('/profile');
-    // Or navigate to cart: navigate('/cart');
-    // Or create an orders page and navigate there
   };
 
   if (verifying) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <CircularProgress size={60} sx={{ mb: 3 }} />
-          <Typography variant="h6">
-            جاري التحقق من عملية الدفع...
-          </Typography>
-        </Box>
+        <Card
+          sx={{
+            textAlign: 'center',
+            py: 8,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: '0 20px 60px rgba(102, 126, 234, 0.3)',
+            borderRadius: 4,
+            overflow: 'hidden'
+          }}
+        >
+          <CardContent>
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              <CircularProgress
+                size={80}
+                sx={{
+                  color: '#fff',
+                  '& .MuiCircularProgress-circle': {
+                    strokeLinecap: 'round'
+                  }
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Payment sx={{ fontSize: 32, color: 'rgba(255, 255, 255, 0.3)' }} />
+              </Box>
+            </Box>
+            <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold', mt: 3 }}>
+              جاري التحقق من عملية الدفع...
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', mt: 1 }}>
+              يرجى الانتظار بينما نتحقق من دفعتك
+            </Typography>
+          </CardContent>
+        </Card>
       </Container>
     );
   }
@@ -129,20 +177,70 @@ const PaymentSuccess = () => {
   if (!paymentStatus?.success) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
-        <Card sx={{ textAlign: 'center', py: 6 }}>
+        <Card
+          sx={{
+            textAlign: 'center',
+            py: 6,
+            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+            boxShadow: '0 20px 60px rgba(255, 107, 107, 0.3)',
+            borderRadius: 4,
+            overflow: 'hidden'
+          }}
+        >
           <CardContent>
-            <Error sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>
+            <Avatar sx={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              width: 100,
+              height: 100,
+              mx: 'auto',
+              mb: 3
+            }}>
+              <Error sx={{ fontSize: 50, color: '#fff' }} />
+            </Avatar>
+            <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold', mb: 2 }}>
               فشلت عملية الدفع
             </Typography>
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#fff'
+              }}
+            >
               {paymentStatus?.error}
             </Alert>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <Button variant="outlined" onClick={handleGoHome}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                onClick={handleGoHome}
+                sx={{
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                  color: '#fff',
+                  px: 3,
+                  '&:hover': {
+                    borderColor: '#fff',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 العودة للرئيسية
               </Button>
-              <Button variant="contained" onClick={() => navigate('/checkout')}>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/checkout')}
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  color: '#fff',
+                  px: 3,
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
                 إعادة المحاولة
               </Button>
             </Box>
@@ -154,111 +252,302 @@ const PaymentSuccess = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 8 }}>
-      <Paper sx={{ p: 4 }}>
-        {/* Success Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <CheckCircle
-            sx={{
-              fontSize: 80,
-              color: green[500],
-              mb: 2
-            }}
-          />
-          <Typography variant="h4" gutterBottom>
-            تمت عملية الدفع بنجاح!
+      {/* Success Header */}
+      <Card
+        sx={{
+          mb: 4,
+          background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+          boxShadow: '0 20px 60px rgba(76, 175, 80, 0.3)',
+          borderRadius: 4,
+          overflow: 'hidden',
+          position: 'relative'
+        }}
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          background: 'linear-gradient(90deg, #81c784, #4caf50, #45a049)',
+        }} />
+        <CardContent sx={{ textAlign: 'center', py: 6 }}>
+          <Avatar sx={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            width: 100,
+            height: 100,
+            mx: 'auto',
+            mb: 3,
+            animation: 'pulse 2s infinite'
+          }}>
+            <CheckCircle sx={{ fontSize: 50, color: '#fff' }} />
+          </Avatar>
+          <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold', mb: 1 }}>
+            تمت عملية الدفع بنجاح! 🎉
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 2 }}>
             شكراً لك على طلبك. تم استلام الدفع بنجاح.
           </Typography>
-        </Box>
+          <Chip
+            label="مؤكدة"
+            color="success"
+            sx={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '0.9rem'
+            }}
+          />
+        </CardContent>
+      </Card>
 
-        {/* Payment Details */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
+      {/* Payment Details Card */}
+      <Card sx={{
+        mb: 4,
+        background: theme.palette.background.paper,
+        borderRadius: 4,
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+      }}>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+            <Receipt sx={{ color: theme.palette.primary.main, fontSize: 28 }} />
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
               تفاصيل الدفع
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography color="text.secondary">رقم المعاملة:</Typography>
-              <Typography fontWeight="bold">
+          </Box>
+
+          <Box sx={{ display: 'grid', gap: 3 }}>
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+              background: alpha(theme.palette.primary.main, 0.05),
+              borderRadius: 2,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+            }}>
+              <Typography variant="body1" color="text.secondary">رقم المعاملة:</Typography>
+              <Typography variant="body1" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
                 {paymentStatus.transactionId}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography color="text.secondary">المبلغ المدفوع:</Typography>
-              <Typography fontWeight="bold" color="primary.main">
+
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+              background: alpha(green[500], 0.05),
+              borderRadius: 2,
+              border: `1px solid ${alpha(green[500], 0.1)}`
+            }}>
+              <Typography variant="body1" color="text.secondary">المبلغ المدفوع:</Typography>
+              <Typography variant="h6" fontWeight="bold" color={green[500]}>
                 {paymentStatus.amount?.toLocaleString()} IQD
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography color="text.secondary">وقت الدفع:</Typography>
-              <Typography>
+
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+              background: alpha(blue[500], 0.05),
+              borderRadius: 2,
+              border: `1px solid ${alpha(blue[500], 0.1)}`
+            }}>
+              <Typography variant="body1" color="text.secondary">وقت الدفع:</Typography>
+              <Typography variant="body1" fontWeight="bold">
                 {paymentStatus.verifiedAt?.toLocaleString('ar-IQ')}
               </Typography>
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </CardContent>
+      </Card>
 
-        {/* Next Steps */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            الخطوات التالية
-          </Typography>
-          <Stepper orientation="vertical">
-            <Step completed>
-              <StepLabel>
-                <Typography variant="body1">استلام الطلب</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  سيتم تجهيز طلبك للشحن
+      {/* Timeline Steps */}
+      <Card sx={{
+        mb: 4,
+        background: theme.palette.background.paper,
+        borderRadius: 4,
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+      }}>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+            <Timeline sx={{ color: theme.palette.primary.main, fontSize: 28 }} />
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+              مراحل تنفيذ الطلب
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'grid', gap: 2 }}>
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              p: 2,
+              background: alpha(green[500], 0.05),
+              borderRadius: 2,
+              border: `1px solid ${alpha(green[500], 0.1)}`
+            }}>
+              <CheckCircle sx={{ color: green[500], fontSize: 24 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: green[500] }}>
+                  استلام الطلب
                 </Typography>
-              </StepLabel>
-            </Step>
-            <Step completed>
-              <StepLabel>
-                <Typography variant="body1">الشحن والتوصيل</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  تم تجهيز طلبك للشحن
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              p: 2,
+              background: alpha(purple[500], 0.05),
+              borderRadius: 2,
+              border: `1px solid ${alpha(purple[500], 0.1)}`
+            }}>
+              <LocalShipping sx={{ color: purple[500], fontSize: 24 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: purple[500] }}>
+                  الشحن والتوصيل
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   سيتم توصيل طلبك إلى العنوان المحدد
                 </Typography>
-              </StepLabel>
-            </Step>
-            <Step>
-              <StepLabel>
-                <Typography variant="body1">استلام المنتج</Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              p: 2,
+              background: alpha(orange[500], 0.05),
+              borderRadius: 2,
+              border: `1px solid ${alpha(orange[500], 0.1)}`
+            }}>
+              <Inventory sx={{ color: orange[500], fontSize: 24 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: orange[500] }}>
+                  استلام المنتج
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   استلم طلبك وتأكد من جودته
                 </Typography>
-              </StepLabel>
-            </Step>
-          </Stepper>
-        </Box>
+              </Box>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
-        {/* Actions */}
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button
-            variant="outlined"
-            size="large"
-            startIcon={<Home />}
-            onClick={handleGoHome}
-          >
-            العودة للرئيسية
-          </Button>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<Receipt />}
-            onClick={handleViewOrder}
-          >
-            عرض حسابي
-          </Button>
-        </Box>
+      {/* Action Buttons */}
+      <Card sx={{
+        mb: 4,
+        background: theme.palette.background.paper,
+        borderRadius: 4,
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+      }}>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<Home />}
+              onClick={handleGoHome}
+              sx={{
+                px: 4,
+                py: 2,
+                borderRadius: 3,
+                fontSize: '1rem',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 4px 20px rgba(255, 255, 255, 0.1)'
+                    : '0 4px 20px rgba(0, 0, 0, 0.2)',
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+                }
+              }}
+            >
+              العودة للرئيسية
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<Receipt />}
+              onClick={handleViewOrder}
+              sx={{
+                px: 4,
+                py: 2,
+                borderRadius: 3,
+                fontSize: '1rem',
+                background: 'linear-gradient(45deg, #4caf50, #45a049)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #45a049, #3d8b40)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 20px rgba(76, 175, 80, 0.4)'
+                }
+              }}
+            >
+              عرض حسابي
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
-        {/* Contact Info */}
-        <Alert severity="info" sx={{ mt: 4 }}>
-          <Typography variant="body2">
-            إذا كان لديك أي استفسارات حول طلبك، يمكنك التواصل معنا عبر البريد الإلكتروني أو الهاتف.
+      {/* Contact Support Card */}
+      <Card sx={{
+        background: 'linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
+        borderRadius: 4,
+        overflow: 'hidden'
+      }}>
+        <CardContent sx={{ p: 4, textAlign: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 3 }}>
+            <Headphones sx={{ color: '#fff', fontSize: 28 }} />
+            <Typography variant="h5" sx={{ color: '#fff', fontWeight: 'bold' }}>
+              تحتاج مساعدة؟
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 3 }}>
+            إذا كان لديك أي استفسارات حول طلبك، فريق الدعم جاهز لمساعدتك
           </Typography>
-        </Alert>
-      </Paper>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.5)',
+                color: '#fff',
+                '&:hover': {
+                  borderColor: '#fff',
+                  background: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              تتبع الطلب
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Headphones />}
+              sx={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.3)'
+                }
+              }}
+            >
+              تواصل مع الدعم
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
 };

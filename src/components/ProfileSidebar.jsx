@@ -214,8 +214,24 @@ export default function ProfileDrawer({ open, onClose }) {
 
     const getImageUrl = (img) => {
         if (!img) return null;
-        if (img.startsWith('http')) return img;
-        return `http://localhost:3000/${img.replace('uploads/', '')}`;
+
+        // If it's already a full URL, return as-is
+        if (img.startsWith('http') || img.startsWith('blob:') || img.startsWith('data:')) {
+            return img;
+        }
+
+        // For /uploads/ paths, return as-is (Vite proxy will handle it)
+        if (img.startsWith('/uploads/')) {
+            return img;
+        }
+
+        // If it starts with uploads/ without leading slash, add it
+        if (img.startsWith('uploads/')) {
+            return `/${img}`;
+        }
+
+        // Otherwise, assume it's a relative path
+        return img;
     };
 
     // Count Offers
@@ -287,6 +303,23 @@ export default function ProfileDrawer({ open, onClose }) {
                     borderBottomLeftRadius: isRTL ? 20 : 0,
                     borderTopRightRadius: !isRTL ? 20 : 0,
                     borderBottomRightRadius: !isRTL ? 20 : 0,
+                    // Mobile improvements
+                    height: '100vh',
+                    maxHeight: '100vh',
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': {
+                        width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                        background: '#f1f1f1',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                        background: '#888',
+                        borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                        background: '#555',
+                    },
                 }
             }}
         >
@@ -351,9 +384,22 @@ export default function ProfileDrawer({ open, onClose }) {
 
 
             {/* List Items */}
-
-            <MenuItem>
-                <List sx={{ px: 2 }}>
+            <Box sx={{
+                flexGrow: 1,
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 300px)', // Account for header and settings
+                '&::-webkit-scrollbar': {
+                    width: '4px',
+                },
+                '&::-webkit-scrollbar-track': {
+                    background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '2px',
+                },
+            }}>
+                <List sx={{ px: 2, py: 1 }}>
 
 
                     <ListItemButton onClick={() => { navigate('/profile'); onClose(); }} sx={fancyItemSx}>
@@ -436,7 +482,7 @@ export default function ProfileDrawer({ open, onClose }) {
                     </ListItemButton>
 
                 </List>
-            </MenuItem>
+            </Box>
 
             <Box sx={{ flexGrow: 1 }} />
             <Divider sx={{ my: 1 }} />

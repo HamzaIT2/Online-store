@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CssBaseline, ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material";
 import { useTheme } from "./context/ThemeContext";
 import { getLang } from "./i18n";
@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
+import ProtectedRoute from "./components/ProtectedRoute";
 import ProductDetails from "./pages/ProductDetails";
 import Profile from "./pages/Profile";
 import MyProducts from "./pages/MyProducts";
@@ -26,6 +27,9 @@ import HeroSlider from "./components/HeroSlider";
 import Footer from "./components/Footer";
 import Offers from "./pages/Offers";
 import EditProduct from "./pages/EditProduct";
+import ScrollToTop from "./components/ScrollToTop";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 export default function App() {
   const { darkMode } = useTheme();
   const lang = getLang();
@@ -79,9 +83,22 @@ export default function App() {
       <CssBaseline />
 
       <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </MuiThemeProvider>
+  );
 
+  function AppContent() {
+    const location = useLocation();
 
-        <Navbar />
+    // صفحات المصادقة التي لا نريد أن يظهر فيها الفوتر
+    const authPages = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-code'];
+    const isAuthPage = authPages.includes(location.pathname);
+
+    return (
+      <>
+        <ScrollToTop />
+        {!isAuthPage && <Navbar />}
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/verify-code" element={<VerifyOTP />} />
@@ -90,27 +107,29 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/offers" element={<Offers />} />
           <Route path="/edit-product/:id" element={<EditProduct />} />
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route
             path="/sso-callback"
             element={<AuthenticateWithRedirectCallback />}
           />
-          <Route path="/products/:id" element={<ProductDetails />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/my-products" element={<MyProducts />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/categories/:id" element={<CategoryDetails />} />
-          <Route path="/add-product" element={<AddProduct />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/favorites" element={<Favorites />} />
-          <Route path="/chats" element={<Chats />} />
-          <Route path="/payment/zain-cash/success" element={<PaymentSuccess />} />
+          <Route path="/products/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/my-products" element={<ProtectedRoute><MyProducts /></ProtectedRoute>} />
+          <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+          <Route path="/categories/:id" element={<ProtectedRoute><CategoryDetails /></ProtectedRoute>} />
+          <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+          <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+          <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+          <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+          <Route path="/payment/zain-cash/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
 
           {/* توجيه أي مسار غير معروف إلى الرئيسية */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <Footer />
-      </BrowserRouter>
-    </MuiThemeProvider>
-  );
+        {!isAuthPage && <Footer />}
+      </>
+    );
+  }
 }
