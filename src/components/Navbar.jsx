@@ -148,14 +148,22 @@ export default function Navbar() {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (!token) { if (mounted) setFavCount(0); return; }
         const res = await getMyFavorites();
-        const data = res && (res.data ?? res) ? (res.data ?? res) : [];
+        // Handle paginated response: { data: productsArray, total: number }
+        const data = res?.data || [];
         let products = [];
-        if (Array.isArray(data)) products = data.map(f => f.product || f).filter(Boolean);
-        else if (Array.isArray(data.items)) products = data.items.map(f => f.product || f).filter(Boolean);
-        else if (Array.isArray(data.data)) products = data.data.map(f => f.product || f).filter(Boolean);
+        if (Array.isArray(data)) {
+          products = data.map(f => f.product || f).filter(Boolean);
+        } else if (Array.isArray(res)) {
+          // Fallback for direct array response
+          products = res.map(f => f.product || f).filter(Boolean);
+        }
         if (mounted) setFavCount(products.length);
-      } catch (e) {
-        // ignore
+      } catch (error) {
+        // Silent fail for 401 and other errors
+        if (error?.response?.status !== 401) {
+          console.warn('Failed to load favorites count:', error?.response?.status);
+        }
+        if (mounted) setFavCount(0);
       }
     };
     loadCount();
@@ -231,27 +239,57 @@ export default function Navbar() {
     }
   };
 
-  const handleApplyFilter = (filterData) => {
+  const handleApplyFilters = (filterData) => {
     const params = new URLSearchParams(searchParams);
 
-    // 1. المحافظة
-    if (filterData.province) params.set('provinceId', filterData.province);
-    else params.delete('provinceId');
-
-    // 2. الحالة
-    if (filterData.condition && filterData.condition !== 'all') params.set('condition', filterData.condition);
-    else params.delete('condition');
-
-    // 3. السعر
-    if (filterData.priceRange) {
-      params.set('minPrice', filterData.priceRange[0]);
-      params.set('maxPrice', filterData.priceRange[1]);
+    // Include current search term if it exists
+    const currentSearch = searchParams.get('q') || '';
+    if (currentSearch.trim()) {
+      params.set('search', currentSearch.trim());
+    } else {
+      params.delete('search');
     }
 
-    // التنقل للرابط الجديد
-    navigate(`/?${params.toString()}`);
+    // Apply clean filter payload - only include non-null values
+    if (filterData.provinceId !== null && filterData.provinceId !== undefined) {
+      params.set('provinceId', filterData.provinceId);
+    } else {
+      params.delete('provinceId');
+    }
+
+    if (filterData.condition !== null && filterData.condition !== undefined) {
+      params.set('condition', filterData.condition);
+    } else {
+      params.delete('condition');
+    }
+
+    if (filterData.minPrice !== null && filterData.minPrice !== undefined) {
+      params.set('minPrice', filterData.minPrice);
+    } else {
+      params.delete('minPrice');
+    }
+
+    if (filterData.maxPrice !== null && filterData.maxPrice !== undefined) {
+      params.set('maxPrice', filterData.maxPrice);
+    } else {
+      params.delete('maxPrice');
+    }
+
+    // Navigate to updated URL
+    const newUrl = params.toString();
+    navigate(`/?${newUrl}`);
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const trimmedSearch = searchTerm.trim();
+
+    if (trimmedSearch) {
+      navigate(`/?search=${encodeURIComponent(trimmedSearch)}`);
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <AppBar position="fixed" sx={{
@@ -491,7 +529,10 @@ export default function Navbar() {
               <Tooltip title="تصفية النتائج">
                 <IconButton
                   size="small"
-                  onClick={() => setIsFilterOpen(true)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    setIsFilterOpen(true);
+                  }}
                   sx={{
                     color: '#3182ce',
                     '&:hover': {
@@ -791,7 +832,7 @@ export default function Navbar() {
       <FilterDrawer
         open={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        onApply={handleApplyFilter}
+        onApply={handleApplyFilters}
       />
     </AppBar>
   );
