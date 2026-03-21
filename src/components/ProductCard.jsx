@@ -1,4 +1,4 @@
-import { Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert, Rating } from "@mui/material";
+import { Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert, Rating, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import FavoriteToggle from "./FavoriteToggle";
 import ProductCardChatButton from "./ProductCardChatButton";
@@ -96,11 +96,29 @@ export default function ProductCard({ product }) {
     if (!src) return "/placeholder.svg";
     const hasProtocol = /^https?:\/\//i.test(src);
     if (hasProtocol) return src;
-    // Normalize uploads path to use direct uploads path (not through API)
+
+    // Get backend base URL
+    const backendUrl = (() => {
+      try {
+        const baseURL = axiosInstance.defaults.baseURL;
+        const origin = new URL(baseURL).origin;
+        return origin;
+      } catch {
+        return "http://localhost:3000"; // fallback
+      }
+    })();
+
+    // Normalize uploads path to use backend URL
     if (src.startsWith("/uploads") || src.startsWith("uploads/")) {
       const path = src.startsWith("/") ? src : `/${src}`;
-      return `/uploads${path.replace('/uploads', '')}`;
+      return `${backendUrl}${path}`;
     }
+
+    // If it's a relative path without /uploads, assume it's from backend
+    if (!src.startsWith("/")) {
+      return `${backendUrl}/${src}`;
+    }
+
     return src;
   };
   const mainImage = resolveImageSrc();
@@ -174,12 +192,43 @@ export default function ProductCard({ product }) {
 
           display: "flex",
           flexDirection: "column",
+          position: 'relative', // Needed for badge positioning
         }}
         onClick={handleDetails}
         role="button"
         tabIndex={0}
         aria-label={product?.title || 'View product details'}
       >
+        {/* Sold Badge Overlay */}
+        {product?.status === 'sold' && (
+          <Badge
+            badgeContent="مباع"
+            color="error"
+            sx={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 10,
+              '& .MuiBadge-badge': {
+                fontSize: '0.8rem',
+                fontWeight: 'bold',
+                padding: '4px 8px',
+                minWidth: '60px',
+                height: '24px',
+                borderRadius: '12px',
+                backgroundColor: '#d32f2f',
+                boxShadow: '0 2px 8px rgba(211, 47, 47, 0.6)',
+                animation: 'pulse 2s infinite',
+                '@keyframes pulse': {
+                  '0%': { transform: 'scale(1)' },
+                  '50%': { transform: 'scale(1.05)' },
+                  '100%': { transform: 'scale(1)' },
+                }
+              }
+            }}
+          />
+        )}
+
         <CardMedia
           component="img"
           sx={{
@@ -187,6 +236,7 @@ export default function ProductCard({ product }) {
             height: { xs: 200, sm: 250, md: 300 }, // Responsive height
             objectFit: 'cover',
             borderRadius: '8px 8px 0 0',
+            opacity: product?.status === 'sold' ? 0.7 : 1, // Dim image if sold
           }}
           image={mainImage}
           alt={product?.title || 'Product'}
