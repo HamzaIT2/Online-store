@@ -76,7 +76,7 @@ export default function Categories() {
 
         const res = await axiosInstance.get('/categories');
 
-        const data = Array.isArray(res.data) ? res.data : [];
+        const data = Array.isArray(res) ? res : [];
 
         if (!mounted) return;
 
@@ -393,4 +393,3 @@ export default function Categories() {
   );
 
 }
-
