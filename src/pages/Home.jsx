@@ -4,8 +4,7 @@ import { t } from "../i18n";
 import { Link as RouterLink } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
-import Filters from "../components/Filters";
-import SearchBar from "../components/SearchBar";
+import { getAllProducts } from "../api/productsAPI";
 import ProductCard from "../components/ProductCard";
 import { Grow } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +46,6 @@ export default function Home() {
   const loadingHeroSlides = async () => {
     try {
       const data = await fetchHeroSlidesFromApi();
-      console.log("🔥 البيانات الخام من السيرفر:", data);
 
       if (!data || data.length === 0) {
         setHeroSlides([]);
@@ -55,21 +53,29 @@ export default function Home() {
       }
 
       const formattedSlides = data.map((product, index) => {
-        const baseUrl = "/uploads";
+        // Get backend base URL
+        const backendUrl = (() => {
+          try {
+            const baseURL = axiosInstance.defaults.baseURL;
+            const origin = new URL(baseURL).origin;
+            return origin;
+          } catch {
+            return "http://localhost:3000"; // fallback
+          }
+        })();
+
         let imageUrl = '/placeholder.jpg';
         if (product.images && product.images.length > 0 && product.images[0].url) {
           let cleanPath = product.images[0].url;
           if (cleanPath.startsWith('/uploads/')) {
-            cleanPath = cleanPath.replace('/uploads', '');
+            imageUrl = `${backendUrl}${cleanPath}`;
           } else if (cleanPath.startsWith('uploads/')) {
-            cleanPath = cleanPath.replace('uploads', '');
+            imageUrl = `${backendUrl}/${cleanPath}`;
+          } else if (cleanPath.startsWith('http')) {
+            imageUrl = cleanPath;
+          } else {
+            imageUrl = `${backendUrl}/uploads/${cleanPath}`;
           }
-
-          if (!cleanPath.startsWith('/')) {
-            cleanPath = `/${cleanPath}`;
-          }
-
-          imageUrl = `${baseUrl}${cleanPath}`;
         }
 
         return {
@@ -82,7 +88,6 @@ export default function Home() {
         };
       });
 
-      console.log("✅ البيانات المنسقة للسلايدر:", formattedSlides);
       setHeroSlides(formattedSlides);
 
     } catch (error) {
@@ -98,14 +103,11 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      // جلب المنتجات من API - الكود البسيط الذي كان يعمل
-      const res = await axiosInstance.get('/products', {
-        headers: { 'Cache-Control': 'no-cache' },
-        params: { _ts: Date.now() },
-      });
+      // Use getAllProducts with search and filter parameters
+      const res = await getAllProducts(filters, searchTerm);
 
-      console.log('Products fetched:', res.data);
-      setProducts(res.data.data || []);
+      // Extract products array from paginated response
+      setProducts(res?.data || []);
 
     } catch (err) {
       console.error('Error loading products:', err);
@@ -120,36 +122,54 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Read category from URL (e.g., /?category=c-clothes) and prefill filters
+    // Read all filter parameters from URL and prefill filters
     const params = new URLSearchParams(location.search);
-    const cat = params.get('category');
+    const categoryId = params.get('categoryId');
+    const provinceId = params.get('provinceId');
+    const condition = params.get('condition');
+    const minPrice = params.get('minPrice');
+    const maxPrice = params.get('maxPrice');
     const q = params.get('q');
 
-    // تحديث الفئة إذا كانت موجودة في URL
-    if (cat) {
-      setFilters((prevFilters) => {
-        // تحديث الفئة فقط إذا كانت مختلفة عن الحالية
-        if (prevFilters.category !== cat) {
-          return { ...prevFilters, category: cat };
-        }
-        return prevFilters;
-      });
-    } else {
-      // مسح الفئة إذا لم تكن موجودة في URL
-      setFilters((prevFilters) => {
-        if (prevFilters.category !== '') {
-          return { ...prevFilters, category: '' };
-        }
-        return prevFilters;
-      });
-    }
+    // Update filters state with all URL parameters
+    setFilters((prevFilters) => {
+      const newFilters = { ...prevFilters };
 
-    // تحديث مصطلح البحث إذا كان موجوداً في URL
+      // Category
+      if (categoryId) {
+        newFilters.category = categoryId;
+      } else if (prevFilters.category !== '') {
+        newFilters.category = '';
+      }
+
+      // Province - use provinceId to match FilterDrawer
+      if (provinceId) {
+        newFilters.provinceId = Number(provinceId);
+      } else if (prevFilters.provinceId !== null) {
+        newFilters.provinceId = null;
+      }
+
+      // Condition - use null to match FilterDrawer
+      if (condition) {
+        newFilters.condition = condition;
+      } else if (prevFilters.condition !== null) {
+        newFilters.condition = null;
+      }
+
+      // Price Range
+      if (minPrice && maxPrice) {
+        newFilters.priceRange = [Number(minPrice), Number(maxPrice)];
+      } else if (prevFilters.priceRange && (prevFilters.priceRange[0] !== 0 || prevFilters.priceRange[1] !== 2000000)) {
+        newFilters.priceRange = [0, 2000000];
+      }
+
+      return newFilters;
+    });
+
+    // Update search term from URL
     if (q) {
-      // Apply search term from URL for subcategory quick search
       setSearchTerm(q);
     } else {
-      // مسح مصطلح البحث إذا لم يكن موجوداً
       setSearchTerm('');
     }
   }, [location.search]);
@@ -171,7 +191,6 @@ export default function Home() {
   // الاستماع لحدث إضافة منتج جديد
   useEffect(() => {
     const handleProductAdded = () => {
-      console.log('Product added event detected - refreshing products');
       loadProducts();
       loadingHeroSlides();
     };
@@ -198,10 +217,6 @@ export default function Home() {
     >
       <Box sx={{ mb: 6 }}>
         <HeroSlider slides={heroSlides} loading={loadingHero} />
-      </Box>
-
-      <Box>
-        {/* <Filters onFilterChange={handleFilterChange} /> */}
       </Box>
 
       {loading ? (
@@ -231,7 +246,20 @@ export default function Home() {
               <Card>
                 <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 100 }}>{t('add_product') || 'Add Listing'}</Typography>
-                  <Button component={RouterLink} to="/add-product" variant="contained">{t('add_product')}</Button>
+                  <Button
+                    component={RouterLink}
+                    to="/add-product"
+                    variant="contained"
+                    onClick={(e) => {
+                      const token = localStorage.getItem('token');
+                      if (!token) {
+                        e.preventDefault();
+                        navigate('/login');
+                      }
+                    }}
+                  >
+                    {t('add_product')}
+                  </Button>
                 </CardContent>
               </Card>
             </Box>
