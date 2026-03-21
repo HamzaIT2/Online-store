@@ -25,7 +25,7 @@ export default function CategoryDetails() {
       if (isNumeric) {
         try {
           const res = await axiosInstance.get(`/categories/${id}`);
-          const cat = res.data || {};
+          const cat = res || {};
           setTitle(cat.nameAr || cat.name || "");
           const subsList = Array.isArray(cat.subCategories) ? cat.subCategories.map((s) => ({ id: s.categoryId, name: s.nameAr || s.name })) : [];
           if (subsList.length > 0) {
