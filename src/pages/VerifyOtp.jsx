@@ -89,9 +89,9 @@ const VerifyOtp = () => {
                 code: code
             });
 
-            if (res.data.token) {
-                localStorage.setItem('token', res.data.token);
-                localStorage.setItem('user', JSON.stringify(res.data.user));
+            if (res.token) {
+                localStorage.setItem('token', res.token);
+                localStorage.setItem('user', JSON.stringify(res.user));
             }
 
             localStorage.removeItem('pendingEmail');
