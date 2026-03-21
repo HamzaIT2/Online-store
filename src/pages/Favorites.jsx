@@ -31,14 +31,14 @@ export default function Favorites() {
       }
       try {
         const res = await getMyFavorites();
-        const data = res && (res.data ?? res) ? (res.data ?? res) : [];
+        // Handle paginated response: { data: productsArray, total: number }
+        const data = res?.data || [];
         let products = [];
         if (Array.isArray(data)) {
           products = data.map((f) => f.product || f).filter(Boolean);
-        } else if (Array.isArray(data.items)) {
-          products = data.items.map((f) => f.product || f).filter(Boolean);
-        } else if (Array.isArray(data.data)) {
-          products = data.data.map((f) => f.product || f).filter(Boolean);
+        } else if (Array.isArray(res)) {
+          // Fallback for direct array response
+          products = res.map((f) => f.product || f).filter(Boolean);
         }
         setItems(products);
         // load my ads
