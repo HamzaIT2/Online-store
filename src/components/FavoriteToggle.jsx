@@ -16,21 +16,36 @@ export default function FavoriteToggle({ productId, size = "medium" }) {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
+      // Only load favorite data if user is authenticated
+      if (!hasToken) {
+        // Default to false for guests
+        setIsFav(false);
+        setCount(0);
+        return;
+      }
+
       try {
         const c = await getFavoriteCount(productId);
         if (!mounted) return;
-        setCount(Number(c.data?.count ?? c.data ?? 0));
-      } catch (_) {
-        // ignore
-      }
-      if (hasToken) {
-        try {
-          const r = await checkIsFavorited(productId);
-          if (!mounted) return;
-          setIsFav(Boolean(r.data?.favorited ?? r.data));
-        } catch (_) {
-          // ignore
+        setCount(Number(c?.count ?? 0));
+      } catch (error) {
+        // Silent fail for 401 and other errors
+        if (error?.response?.status !== 401) {
+          console.warn('Failed to get favorite count:', error?.response?.status);
         }
+        setCount(0);
+      }
+
+      try {
+        const r = await checkIsFavorited(productId);
+        if (!mounted) return;
+        setIsFav(Boolean(r?.favorited ?? r));
+      } catch (error) {
+        // Silent fail for 401 and other errors
+        if (error?.response?.status !== 401) {
+          console.warn('Failed to check favorite status:', error?.response?.status);
+        }
+        setIsFav(false);
       }
     };
     load();
