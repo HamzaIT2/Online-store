@@ -9,6 +9,10 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
   // Fetch user data when chats change
   useEffect(() => {
     const fetchUserData = async () => {
+      // Check if user is authenticated
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) return; // Don't make API calls for guests
+
       const newCache = { ...userCache };
 
       for (const chat of chats) {
