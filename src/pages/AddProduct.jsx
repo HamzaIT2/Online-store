@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
   Container, Grid, TextField, MenuItem, Button, Typography, Box,
-  Paper, LinearProgress, InputAdornment, IconButton, Avatar, Switch, FormControlLabel, Alert
+  Paper, LinearProgress, InputAdornment, IconButton, Avatar, Switch, FormControlLabel, Alert, Snackbar, Chip
 } from "@mui/material";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import DeleteIcon from '@mui/icons-material/Delete';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import axiosInstance from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { t } from "../i18n";
@@ -14,17 +17,8 @@ import { motion } from 'framer-motion';
 // --- الثوابت والبيانات الاحتياطية (كما هي في كودك) ---
 const CONDITION_OPTIONS = [
   { key: 'condition_new', value: 'new' },
-  { key: 'condition_like_new', value: 'like_new' },
-  { key: 'condition_good', value: 'good' },
-  { key: 'condition_fair', value: 'fair' },
-  { key: 'condition_poor', value: 'poor' },
-];
-
-const PROVINCE_FALLBACKS = [
-  { provinceId: 'p-baghdad', nameAr: 'بغداد', nameEn: 'Baghdad' },
-  { provinceId: 'p-basra', nameAr: 'البصرة', nameEn: 'Basra' },
-  { provinceId: 'p-ninawa', nameAr: 'نينوى', nameEn: 'Nineveh' },
-  { provinceId: 'p-erbil', nameAr: 'أربيل', nameEn: 'Erbil' },
+  { key: 'condition_used', value: 'used' },
+  { key: 'condition_bad', value: 'bad' },
 ];
 
 const CATEGORY_OPTIONS = [
@@ -37,17 +31,6 @@ const CATEGORY_OPTIONS = [
 
 
 ]
-
-const CITY_FALLBACKS = {
-  'p-baghdad': { ar: ['بغداد', 'الكرخ', 'الرصافة'], en: ['Baghdad', 'Karkh', 'Rusafa'] },
-  'بغداد': { ar: ['بغداد', 'الكرخ', 'الرصافة'], en: ['Baghdad', 'Karkh', 'Rusafa'] },
-  'p-basra': { ar: ['البصرة', 'القرنة', 'الفاو'], en: ['Basra', 'Al-Qurna', 'Al-Faw'] },
-  'البصرة': { ar: ['البصرة', 'القرنة', 'الفاو'], en: ['Basra', 'Al-Qurna', 'Al-Faw'] },
-  'p-ninawa': { ar: ['الموصل', 'تلكيف', 'بعشيقة'], en: ['Mosul', 'Tallkayf', 'Bashiqa'] },
-  'نينوى': { ar: ['الموصل', 'تلكيف', 'بعشيقة'], en: ['Mosul', 'Tallkayf', 'Bashiqa'] },
-  'p-erbil': { ar: ['أربيل', 'شقلاوة', 'صلاح الدين'], en: ['Erbil', 'Shaqlawa', 'Salahaddin'] },
-  'أربيل': { ar: ['أربيل', 'شقلاوة', 'صلاح الدين'], en: ['Erbil', 'Shaqlawa', 'Salahaddin'] },
-};
 
 const getCurrentLang = () => {
   try { return localStorage.getItem('lang') || 'ar'; } catch { return 'ar'; }
@@ -72,14 +55,16 @@ export default function AddProduct() {
     description: '',
     categoryId: '',
     price: '',
-    condition: 'good',
-    provinceId: '',
+    condition: 'new',  // Changed from 'good' to 'new' (backend enum)
+    provinceId: '',     // Will be set to number when province selected
     cityId: '',
     address: '',
-    isNegotiable: true,
+    isNegotiable: false,
   });
 
   const [files, setFiles] = useState([]);
+  const [coverImageIndex, setCoverImageIndex] = useState(0);
+  const [imageError, setImageError] = useState('');
 
   // --- Effects (التحميل والتحقق) ---
   useEffect(() => {
@@ -89,12 +74,19 @@ export default function AddProduct() {
           axiosInstance.get('/categories'),
           axiosInstance.get('/provinces'),
         ]);
-        setCategories(cats.data || []);
-        setProvinces(prov.data || []);
+
+        // Safely extract data from different response structures
+        const categoriesData = cats.data?.data || cats.data || cats || [];
+        const provincesData = prov.data?.data || prov.data || prov || [];
+
+        setCategories(categoriesData);
+        setProvinces(provincesData);
+
       } catch (err) {
-        console.error("Failed to load data:", err);
+        console.error("❌ Failed to load data:", err);
+        console.error("❌ Error response:", err.response?.data);
         setError(t('error_loading_form_data'));
-        setProvinces(PROVINCE_FALLBACKS);
+        setProvinces([]);  // Set empty array instead of fallback
       }
     };
     load();
@@ -118,21 +110,24 @@ export default function AddProduct() {
 
   useEffect(() => {
     const loadCities = async () => {
-      if (!form.provinceId) { setCities([]); return; }
+      if (!form.provinceId) {
+        setCities([]);
+        return;
+      }
+
       try {
         const res = await axiosInstance.get(`/provinces/${form.provinceId}/cities`);
-        setCities(res.data || []);
+
+        // Safely extract data from different response structures
+        const citiesData = res.data?.data || res.data || res || [];
+        setCities(citiesData);
+
       } catch (e) {
-        // Fallback Logic
-        const currentLang = getCurrentLang();
-        const key = String(form.provinceId);
-        const fb = CITY_FALLBACKS[key] || CITY_FALLBACKS[key.replace(/^p-/, '')] || [];
-        const citiesList = fb[currentLang] || fb.ar || [];
-        setCities(citiesList.map((n, i) => ({
-          id: i + 1,
-          nameAr: currentLang === 'ar' ? n : (fb.en?.[i] || n),
-          nameEn: currentLang === 'en' ? n : (fb.ar?.[i] || n)
-        })));
+        console.error("❌ Failed to load cities:", e);
+        console.error("❌ Cities error response:", e.response?.data);
+
+        // Set empty cities array - backend data required
+        setCities([]);
       }
     };
     loadCities();
@@ -142,9 +137,33 @@ export default function AddProduct() {
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleImageChange = (e) => {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+    const selectedFiles = Array.from(e.target.files);
+
+    // Check if adding these files would exceed the limit
+    if (files.length + selectedFiles.length > 10) {
+      setImageError('الحد الأقصى للصور هو 10 صور فقط');
+      return;
     }
+
+    setImageError('');
+    setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setFiles(prevFiles => {
+      const newFiles = prevFiles.filter((_, index) => index !== indexToRemove);
+      // Adjust cover image index if needed
+      if (coverImageIndex >= newFiles.length) {
+        setCoverImageIndex(Math.max(0, newFiles.length - 1));
+      } else if (coverImageIndex > indexToRemove) {
+        setCoverImageIndex(coverImageIndex - 1);
+      }
+      return newFiles;
+    });
+  };
+
+  const handleSetCoverImage = (index) => {
+    setCoverImageIndex(index);
   };
 
   const handleSubmit = async (e) => {
@@ -172,7 +191,7 @@ export default function AddProduct() {
     }
 
     if (files.length === 0) {
-      setError('At least one image is required.');
+      setError('يجب إضافة صورة واحدة على الأقل');
       setLoading(false);
       return;
     }
@@ -193,13 +212,19 @@ export default function AddProduct() {
     try {
       // Create Product
       const createRes = await axiosInstance.post('/products', payload);
-      const newProduct = createRes.data;
+      const newProduct = createRes;
       const productId = newProduct?.productId || newProduct?.id;
 
-      // Upload Images
+      // Upload Images with cover image info
       if (productId && files?.length) {
         const formData = new FormData();
-        files.forEach((f) => formData.append('images', f));
+        files.forEach((f, index) => {
+          formData.append('images', f);
+          // Mark which image is the cover
+          if (index === coverImageIndex) {
+            formData.append('coverIndex', index.toString());
+          }
+        });
         const token = localStorage.getItem('token');
         const uploadUrl = `/images/upload/${productId}`;
 
@@ -211,6 +236,10 @@ export default function AddProduct() {
       setSuccess('Product added successfully!');
       setTimeout(() => navigate('/my-products'), 1000);
     } catch (err) {
+      console.error("❌ Product submission failed:", err);
+      console.error("❌ Error response:", err.response?.data);
+      console.error("❌ Error status:", err.response?.status);
+
       const d = err.response?.data;
       const msgs = Array.isArray(d?.message) ? d.message : [d?.message || d?.error || 'Error occurred'];
       setError(msgs.join(', '));
@@ -293,11 +322,14 @@ export default function AddProduct() {
                   onChange={(e) => update('categoryId', e.target.value)}
                 >
 
-                  {categories.map((c) => (
-                    <MenuItem key={c.categoryId} value={c.categoryId} >
-                      {getCurrentLang() === 'ar' ? (c.nameAr || c.name) : (c.nameEn || c.name)}
-                    </MenuItem>
-                  ))}
+                  {categories.map((c) => {
+                    console.log("🏷️ Category item:", c);
+                    return (
+                      <MenuItem key={c.categoryId || c.id} value={c.categoryId || c.id}>
+                        {getCurrentLang() === 'ar' ? (c.nameAr || c.name) : (c.nameEn || c.name)}
+                      </MenuItem>
+                    );
+                  })}
                 </TextField>
               </Grid>
 
@@ -338,11 +370,14 @@ export default function AddProduct() {
                   value={form.provinceId}
                   onChange={(e) => update('provinceId', e.target.value)}
                 >
-                  {provinces.map((p) => (
-                    <MenuItem key={p.provinceId} value={p.provinceId}>
-                      {getCurrentLang() === 'ar' ? (p.nameAr || p.name) : (p.nameEn || p.name)}
-                    </MenuItem>
-                  ))}
+                  {provinces.map((p) => {
+                    console.log("🗺️ Province item:", p);
+                    return (
+                      <MenuItem key={p.provinceId || p.id} value={p.provinceId || p.id}>
+                        {getCurrentLang() === 'ar' ? (p.nameAr || p.name) : (p.nameEn || p.name)}
+                      </MenuItem>
+                    );
+                  })}
                 </TextField>
               </Grid>
 
@@ -355,11 +390,14 @@ export default function AddProduct() {
                   onChange={(e) => update('cityId', e.target.value)}
                   disabled={!cities.length}
                 >
-                  {cities.map((c) => (
-                    <MenuItem key={c.cityId || c.id} value={c.cityId || c.id}>
-                      {getCurrentLang() === 'ar' ? (c?.nameAr || c?.name) : (c?.nameEn || c?.name)}
-                    </MenuItem>
-                  ))}
+                  {cities.map((c) => {
+                    console.log("🏙️ City item:", c);
+                    return (
+                      <MenuItem key={c.cityId || c.id} value={c.cityId || c.id}>
+                        {getCurrentLang() === 'ar' ? (c?.nameAr || c?.name) : (c?.nameEn || c?.name)}
+                      </MenuItem>
+                    );
+                  })}
                 </TextField>
               </Grid>
 
@@ -388,34 +426,48 @@ export default function AddProduct() {
               </Grid>
 
 
-              {/* 1. Image Upload Section (محسن) */}
+              {/* Enhanced Image Upload Section */}
               <Grid item xs={12}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold', color: '#1976d2' }}>
+                    {t('field_images_upload')} ({files.length}/10)
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    أضف صوراً واضحة لمنتجك. الحد الأقصى 10 صور.
+                  </Typography>
+                </Box>
+
+                {/* Image Upload Area */}
                 <Box
                   sx={{
-                    border: '2px dashed #90caf9',
-                    bgcolor: '#f0f7ff',
+                    border: files.length >= 10 ? '2px dashed #ccc' : '2px dashed #90caf9',
+                    bgcolor: files.length >= 10 ? '#f5f5f5' : '#f0f7ff',
                     borderRadius: 2,
-                    p: 4,
+                    p: 3,
                     textAlign: 'center',
-                    cursor: 'pointer',
+                    cursor: files.length >= 10 ? 'not-allowed' : 'pointer',
                     transition: '0.3s',
-                    '&:hover': { bgcolor: '#e3f2fd', borderColor: '#1976d2' }
+                    '&:hover': files.length >= 10 ? {} : { bgcolor: '#e3f2fd', borderColor: '#1976d2' }
                   }}
                 >
-
                   <Button
-                    // component={motion.button}
-                    // whileTap={{ scale: 0.9 }}
-                    // whileHover={{ scale: 1.05 }}
-                    // whileFocus={{ scale: 1 }}
                     component="label"
+                    disabled={files.length >= 10}
                     disableRipple
-                    sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      opacity: files.length >= 10 ? 0.6 : 1
+                    }}
                   >
-                    <CloudUploadIcon sx={{ fontSize: 60, color: '#1976d2', mb: 2 }} />
-                    <Typography variant="h6" color="primary">{t('field_images_upload')}</Typography>
+                    <CloudUploadIcon sx={{ fontSize: 40, color: files.length >= 10 ? '#ccc' : '#1976d2', mb: 1 }} />
+                    <Typography variant="h6" color={files.length >= 10 ? '#ccc' : 'primary'}>
+                      {files.length >= 10 ? 'تم الوصول للحد الأقصى' : 'اختر الصور'}
+                    </Typography>
                     <Typography variant="caption" color="textSecondary">
-                      (JPG, PNG) - اختر صوراً واضحة لزيادة المبيعات
+                      JPG, PNG - الحجم الأقصى 5MB للصورة الواحدة
                     </Typography>
                     <input
                       type="file"
@@ -425,21 +477,133 @@ export default function AddProduct() {
                       onChange={handleImageChange}
                     />
                   </Button>
-
-                  {/* معاينة الصور */}
-                  {files.length > 0 && (
-                    <Box sx={{ display: 'flex', gap: 1, mt: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {files.map((file, index) => (
-                        <Avatar
-                          key={index}
-                          src={URL.createObjectURL(file)}
-                          variant="rounded"
-                          sx={{ width: 80, height: 80, border: '1px solid #ddd' }}
-                        />
-                      ))}
-                    </Box>
-                  )}
                 </Box>
+
+                {/* Image Error Message */}
+                {imageError && (
+                  <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
+                    {imageError}
+                  </Alert>
+                )}
+
+                {/* Image Preview Grid */}
+                {files.length > 0 && (
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                      معاينة الصور (اضغط على النجمة لتحديد صورة الغلاف):
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {files.map((file, index) => (
+                        <Grid item xs={6} sm={4} md={3} key={index}>
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              border: index === coverImageIndex ? '3px solid #1976d2' : '1px solid #ddd',
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                transform: 'scale(1.02)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                              }
+                            }}
+                          >
+                            {/* Cover Image Badge */}
+                            {index === coverImageIndex && (
+                              <Chip
+                                icon={<StarIcon sx={{ fontSize: 16 }} />}
+                                label="صورة الغلاف"
+                                size="small"
+                                color="primary"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 5,
+                                  right: 5,
+                                  zIndex: 10,
+                                  fontSize: '0.7rem',
+                                  height: 24
+                                }}
+                              />
+                            )}
+
+                            {/* Image Preview */}
+                            <Avatar
+                              src={URL.createObjectURL(file)}
+                              variant="rounded"
+                              sx={{
+                                width: '100%',
+                                height: 120,
+                                border: 'none'
+                              }}
+                            />
+
+                            {/* Action Buttons */}
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 5,
+                                left: 5,
+                                display: 'flex',
+                                gap: 0.5
+                              }}
+                            >
+                              {/* Set as Cover Button */}
+                              <IconButton
+                                size="small"
+                                onClick={() => handleSetCoverImage(index)}
+                                sx={{
+                                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                  '&:hover': { bgcolor: 'white' }
+                                }}
+                                title={index === coverImageIndex ? 'صورة الغلاف الحالية' : 'تعيين كصورة غلاف'}
+                              >
+                                {index === coverImageIndex ? (
+                                  <StarIcon color="primary" fontSize="small" />
+                                ) : (
+                                  <StarBorderIcon fontSize="small" />
+                                )}
+                              </IconButton>
+
+                              {/* Delete Button */}
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRemoveImage(index)}
+                                sx={{
+                                  bgcolor: 'rgba(244, 67, 54, 0.9)',
+                                  color: 'white',
+                                  '&:hover': { bgcolor: '#d32f2f' }
+                                }}
+                                title="حذف الصورة"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+
+                            {/* File Name */}
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                bgcolor: 'rgba(0, 0, 0, 0.7)',
+                                color: 'white',
+                                p: 0.5,
+                                fontSize: '0.7rem',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {file.name}
+                            </Box>
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                )}
               </Grid>
 
               <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
