@@ -205,14 +205,31 @@ export default function Offers() {
         console.log("API Response Structure:", response);
         console.log("Response Data:", response.data);
 
-        const allProducts = Array.isArray(response.data) ? response.data : (response.data.products || response.data.data || []);
+        const allProducts = Array.isArray(response?.data) ? response.data : [];
         console.log("All Products after extraction:", allProducts)
         console.log("Number of products:", allProducts.length);
+
+        // Check if the response has pagination metadata
+        const pagination = response.data.pagination || response.data.meta || {};
+
+        // If pagination is present, fetch all pages
+        if (pagination.totalPages > 1) {
+          const allPagesProducts = await Promise.all(
+            Array.from({ length: pagination.totalPages }, (_, index) => {
+              return axiosInstance.get('/products', {
+                params: { page: index + 1 },
+              });
+            })
+          );
+
+          // Flatten the array of pages into a single array of products
+          allProducts = allPagesProducts.flatMap((page) => page.data);
+        }
 
         // 2. 🧠 الفلترة الذكية (هنا السحر)
         const activeOffers = allProducts.filter((p, index) => {
           console.log(`\n=== فحص المنتج رقم ${index + 1}: ${p.title} ===`);
-
+          // ...
           const currentPrice = Number(p.price);
           const oldPrice = Number(p.oldPrice);
 
