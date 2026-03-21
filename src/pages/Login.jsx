@@ -91,10 +91,10 @@ export default function Login() {
       });
 
       // --- حالة النجاح (الحساب مفعل) ---
-      console.log("✅ Login Successful:", res.data);
+      console.log("✅ Login Successful:", res);
 
-      const userData = res.data.user || res.data.data?.user || res.data;
-      const token = res.data.token || res.data.accessToken;
+      const userData = res.user || res;
+      const token = res.token || res.accessToken;
 
       // التحقق من الموافقة على الشروط والأحكام
       if (!userData.termsAccepted) {
