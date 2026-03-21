@@ -153,7 +153,7 @@ export default function Register() {
     const loadProvinces = async () => {
       try {
         const res = await axiosInstance.get('/provinces');
-        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.data) ? res.data.data : []);
+        const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
         setProvinces(list);
       } catch (error) {
         console.log('Error provinces', error);
@@ -177,7 +177,7 @@ export default function Register() {
       const res = await axiosInstance.get(`/provinces/${formData.province}/cities`);
 
       // 3. التأكد من البيانات القادمة (أحياناً تكون داخل data أو مصفوفة مباشرة)
-      const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      const list = Array.isArray(res) ? res : (res.data || []);
 
       setCities(list);
 
