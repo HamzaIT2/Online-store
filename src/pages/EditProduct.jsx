@@ -9,7 +9,7 @@ export default function EditProduct() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -24,15 +24,15 @@ export default function EditProduct() {
     const fetchProduct = async () => {
       try {
         const response = await axiosInstance.get(`/products/${id}`);
-        const p = response.data;
-        
+        const p = response;
+
         setFormData({
-            title: p.title,
-            description: p.description,
-            price: p.price,
-            oldPrice: p.oldPrice || "", // إذا كان فارغاً نجعله نصاً فارغاً
-            condition: p.condition || "new",
-            categoryId: p.categoryId
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          oldPrice: p.oldPrice || "", // إذا كان فارغاً نجعله نصاً فارغاً
+          condition: p.condition || "new",
+          categoryId: p.categoryId
         });
       } catch (error) {
         console.error("Error loading product:", error);
@@ -55,26 +55,26 @@ export default function EditProduct() {
     setSubmitting(true);
 
     try {
-        // نرسل البيانات كـ JSON لأننا لا نرفع صوراً جديدة هنا (يمكنك إضافتها لاحقاً)
-        await axiosInstance.patch(`/products/${id}`, {
-            title: formData.title,
-            description: formData.description,
-            price: Number(formData.price),
-            oldPrice: formData.oldPrice ? Number(formData.oldPrice) : null, // ✅ إرسال السعر القديم
-            condition: formData.condition,
-            categoryId: Number(formData.categoryId)
-        });
+      // نرسل البيانات كـ JSON لأننا لا نرفع صوراً جديدة هنا (يمكنك إضافتها لاحقاً)
+      await axiosInstance.patch(`/products/${id}`, {
+        title: formData.title,
+        description: formData.description,
+        price: Number(formData.price),
+        oldPrice: formData.oldPrice ? Number(formData.oldPrice) : null, // ✅ إرسال السعر القديم
+        condition: formData.condition,
+        categoryId: Number(formData.categoryId)
+      });
 
       navigate(`/products/${id}`); // العودة لصفحة المنتج
     } catch (error) {
       console.error("Error updating product:", error);
       alert("فشل التحديث");
     } finally {
-        setSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <Container sx={{textAlign:'center', mt: 10}}><CircularProgress /></Container>;
+  if (loading) return <Container sx={{ textAlign: 'center', mt: 10 }}><CircularProgress /></Container>;
 
   return (
     <Container maxWidth="md" sx={{ mt: 10, mb: 8 }}>
@@ -85,7 +85,7 @@ export default function EditProduct() {
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <Grid container spacing={3}>
-            
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
