@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { green, purple, orange, blue } from '@mui/material/colors';
 import ZainCashProvider from '../services/zainCashProvider';
+import axiosInstance from '../api/axiosInstance';
 
 const PaymentSuccess = () => {
   const theme = useTheme();
@@ -75,12 +76,17 @@ const PaymentSuccess = () => {
             verifiedAt: verification.verifiedAt
           });
 
-          // Update order status in backend
-          await updateOrderStatus(orderId, {
-            status: 'paid',
-            paymentStatus: 'completed',
-            transactionId: verification.transactionId
-          });
+          // For demo orders, try to purchase a product directly
+          if (orderId === 'demo_order') {
+            await purchaseProductDirectly();
+          } else {
+            // Update order status in backend
+            await updateOrderStatus(orderId, {
+              status: 'paid',
+              paymentStatus: 'completed',
+              transactionId: verification.transactionId
+            });
+          }
         } else {
           setPaymentStatus({
             success: false,
@@ -100,8 +106,142 @@ const PaymentSuccess = () => {
     verifyPayment();
   }, [searchParams]);
 
+  const purchaseProductDirectly = async () => {
+    // Prevent multiple simultaneous requests
+    if (window.isPurchasing) {
+      console.log('Purchase already in progress...');
+      return;
+    }
+
+    try {
+      window.isPurchasing = true;
+
+      // Get the last viewed product from localStorage
+      const lastViewedProduct = localStorage.getItem('lastViewedProduct');
+      if (!lastViewedProduct) {
+        console.log('No product found for purchase');
+        return;
+      }
+
+      const product = JSON.parse(lastViewedProduct);
+      console.log('Product data from localStorage:', product);
+
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('No authentication token found');
+        alert('يجب تسجيل الدخول أولاً');
+        return;
+      }
+
+      // Get current user info to ensure we have the buyer ID
+      const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('User info from localStorage:', userInfo);
+
+      const buyerId = userInfo.id ||
+        userInfo.userId ||
+        userInfo.sub ||
+        userInfo._id ||
+        localStorage.getItem('userId');
+
+      console.log('Extracted buyerId:', buyerId);
+      console.log('Available user fields:', Object.keys(userInfo));
+
+      if (!buyerId) {
+        console.error('No buyer ID found in user info');
+        alert('بيانات المستخدم غير مكتملة، يرجى تسجيل الدخول مرة أخرى');
+        return;
+      }
+
+      // Validate product data
+      if (!product.productId || !product.price) {
+        console.error('Invalid product data:', product);
+        alert('بيانات المنتج غير مكتملة');
+        return;
+      }
+
+      // Convert amount to number
+      const amount = parseFloat(product.price.toString());
+      if (isNaN(amount) || amount <= 0) {
+        console.error('Invalid amount:', product.price);
+        alert('سعر المنتج غير صالح');
+        return;
+      }
+
+      console.log('Purchase attempt:', {
+        productId: product.productId,
+        amount: amount,
+        buyerId: buyerId,
+        sellerId: product.sellerId,
+        token: token ? 'exists' : 'missing'
+      });
+
+      // Check if user is trying to buy their own product
+      if (product.sellerId && product.sellerId === buyerId) {
+        console.error('Self-purchase attempt detected');
+        alert('لا يمكنك شراء منتجك الخاص!');
+        return;
+      }
+
+      // Create transaction using the new backend endpoint
+      const response = await axiosInstance.post('/transactions', {
+        productId: product.productId,
+        amount: amount,
+        buyerId: buyerId // Explicitly send buyerId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('Product purchased successfully:', response.data);
+
+      // Show success message
+      alert('تم شراء المنتج بنجاح! سيتم تحديث حالة المنتج قريباً.');
+
+      // Clear the stored product
+      localStorage.removeItem('lastViewedProduct');
+
+    } catch (error) {
+      console.error('Failed to purchase product:', error);
+
+      // Extract detailed error message
+      let errorMessage = 'فشل في شراء المنتج';
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.log('Error response data:', error.response.data);
+        console.log('Error response status:', error.response.status);
+        console.log('Error response headers:', error.response.headers);
+
+        errorMessage = error.response.data?.message ||
+          error.response.data?.error ||
+          error.response.statusText ||
+          `خطأ ${error.response.status}: ${error.response.statusText}`;
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.log('Error request:', error.request);
+        errorMessage = 'لا يوجد استجابة من السيرفر';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.log('Error message:', error.message);
+        errorMessage = error.message;
+      }
+
+      alert(`فشل في شراء المنتج: ${errorMessage}`);
+    } finally {
+      // Reset purchase flag
+      window.isPurchasing = false;
+    }
+  };
+
   const updateOrderStatus = async (orderId, statusData) => {
     try {
+      // Skip demo orders - they don't exist in backend
+      if (orderId === 'demo_order') {
+        console.log('Skipping demo order status update');
+        return;
+      }
+
       await fetch(`/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
