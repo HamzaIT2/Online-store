@@ -115,7 +115,7 @@ export default function Profile() {
     const load = async () => {
       try {
         const res = await axiosInstance.get('/users/profile');
-        const p = res.data || {};
+        const p = res || {};
         setProfile(p);
         setForm({
           fullName: p.fullName || p.name || '',
@@ -127,7 +127,7 @@ export default function Profile() {
         // Load user stats from backend
         try {
           const statsRes = await axiosInstance.get('/users/stats');
-          setStats(statsRes.data || {
+          setStats(statsRes || {
             totalSales: 0,
             totalProducts: 0,
             totalPurchases: 0,
@@ -219,7 +219,7 @@ export default function Profile() {
 
       // Reload profile to get updated avatar
       const profileRes = await axiosInstance.get('/users/profile');
-      const p = profileRes.data || {};
+      const p = profileRes || {};
 
       setProfile(p);
       setForm({
@@ -288,7 +288,7 @@ export default function Profile() {
 
       // Reload profile to get updated data
       const profileRes = await axiosInstance.get('/users/profile');
-      const p = profileRes.data || {};
+      const p = profileRes || {};
 
       setProfile(p);
       setForm({
