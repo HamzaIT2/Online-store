@@ -46,10 +46,10 @@ export default function MyProducts() {
     const load = async () => {
       try {
         const me = await axiosInstance.get('/users/profile');
-        const userId = me.data?.userId;
+        const userId = me?.userId;
         if (!userId) throw new Error('no-user');
         const res = await axiosInstance.get(`/products/user/${userId}`);
-        const data = res.data || {};
+        const data = res || {};
         const list = Array.isArray(data) ? data : (data.products || data.items || data.data || []);
         setItems(list);
       } catch (e) {
