@@ -70,7 +70,16 @@ export default function ProductDetails() {
     const fetchProduct = async () => {
       try {
         const res = await axiosInstance.get(`/products/${id}`);
-        setProduct(res.data);
+        const productData = res;
+        setProduct(productData);
+
+        // Save product to localStorage for payment processing
+        localStorage.setItem('lastViewedProduct', JSON.stringify({
+          productId: productData.productId,
+          price: productData.price,
+          title: productData.title,
+          sellerId: productData.sellerId || productData.userId || productData.seller?.id || productData.seller?.userId
+        }));
       } catch (err) {
         setError(t('error_loading_product'));
       } finally {
