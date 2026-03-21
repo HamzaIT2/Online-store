@@ -158,6 +158,14 @@ export default function ProfileDrawer({ open, onClose }) {
     // --- Data Fetching Logic (Same as before) ---
     useEffect(() => {
         const fetchData = async () => {
+            // Check if user is authenticated
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            if (!token) {
+                setUserData(null);
+                setFavCount(0);
+                return; // Don't make API calls for guests
+            }
+
             try {
                 setLoading(true);
                 const [userRes, favRes] = await Promise.allSettled([
@@ -165,10 +173,11 @@ export default function ProfileDrawer({ open, onClose }) {
                     axiosInstance.get('/favorites/my-favorites')
                 ]);
 
-                if (userRes.status === 'fulfilled') setUserData(userRes.value.data);
+                if (userRes.status === 'fulfilled') setUserData(userRes.value);
                 if (favRes.status === 'fulfilled') {
-                    const list = favRes.value.data;
-                    setFavCount(Array.isArray(list) ? list.length : (list?.data?.length || 0));
+                    // Handle paginated response: { data: productsArray, total: number }
+                    const list = favRes.value?.data || [];
+                    setFavCount(Array.isArray(list) ? list.length : 0);
                 }
             } catch (error) {
                 console.error("Error fetching drawer data", error);
@@ -269,7 +278,7 @@ export default function ProfileDrawer({ open, onClose }) {
         const offerCount1 = async () => {
             try {
                 const response = await axiosInstance.get('/products');
-                const allProducts = Array.isArray(response.data) ? response.data : (response.data.products || []);
+                const allProducts = Array.isArray(response?.data) ? response.data : [];
 
                 const activeOffers = allProducts.filter(p => {
                     const currerntPrice = parseFloat(p.price);
