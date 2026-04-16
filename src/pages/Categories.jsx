@@ -2,55 +2,96 @@ import { useEffect, useState } from "react";
 
 import axiosInstance from "../api/axiosInstance";
 
-import { Container, Grid, Card, CardActionArea, CardContent, Typography, Box, IconButton, Button, Popover, Grow } from "@mui/material";
+import { Container, Typography, Box, Avatar, Chip, Divider, Grid, Card, CardActionArea, CardContent, CardMedia } from "@mui/material";
 
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import CategoryIcon from "@mui/icons-material/Category";
 
 import { useNavigate } from "react-router-dom";
 
 import { t } from "../i18n";
 
-import Zoom from "@mui/material/Zoom";
+// Get current language
+const getCurrentLang = () => {
+  try {
+    return localStorage.getItem('lang') || 'ar';
+  } catch {
+    return 'ar';
+  }
+};
 
-// Always-visible fallback tiles
 
+// Always-visible fallback tiles with bilingual support
 const FALLBACK_TILES = [
-
-  { slug: 'c-electronics', title: 'إلكترونيات', image: '/cat-electronics.svg', subs: ['هواتف وملحقاتها', 'حواسيب ولابتوبات', 'سماعات وساعات ذكية', 'أجهزة منزلية'] },
-
-  { slug: 'c-furniture', title: 'أثاث وديكور', image: '/cat-furniture.svg', subs: ['غرف نوم', 'غرف جلوس', 'مكاتب وكراسي', 'ديكورات منزلية'] },
-
-  { slug: 'c-clothes', title: 'ملابس وأزياء', image: '/cat-clothes.svg', subs: ['رجالي', 'نسائي', 'أطفال', 'أحذية وحقائب', 'إكسسوارات وساعات'] },
-
-  { slug: 'c-beauty', title: 'جمال وصحة', image: '/cat-beauty.svg', subs: ['مستحضرات تجميل', 'عطور', 'أجهزة عناية (سيشوار، ليزر، ...)'] },
-
-  { slug: 'c-hobbies', title: 'أدوات وهوايات', image: '/cat-hobbies.svg', subs: ['رياضة ولياقة', 'أدوات موسيقية', 'كتب ومستلمات دراسة', 'ألعاب وهدايا'] },
-
-  { slug: 'c-auto', title: 'سيارات وملحقاتها', image: '/cat-auto.svg', subs: ['سيارات مستعملة', 'دراجات', 'قطع غيار', 'إكسسوارات السيارات'] },
-
+  {
+    slug: 'c-electronics',
+    title: { ar: 'إلكترونيات', en: 'Electronics' },
+    image: '/cat-electronics.svg',
+    subs: [
+      { ar: 'هواتف وملحقاتها', en: 'Phones and Accessories' },
+      { ar: 'حواسيب ولابتوبات', en: 'Computers and Laptops' },
+      { ar: 'سماعات وساعات ذكية', en: 'Smart Watches and Headphones' },
+      { ar: 'أجهزة منزلية', en: 'Home Appliances' }
+    ]
+  },
+  {
+    slug: 'c-furniture',
+    title: { ar: 'أثاث وديكور', en: 'Furniture and Decor' },
+    image: '/cat-furniture.svg',
+    subs: [
+      { ar: 'غرف نوم', en: 'Bedrooms' },
+      { ar: 'غرف جلوس', en: 'Living Rooms' },
+      { ar: 'مكاتب وكراسي', en: 'Desks and Chairs' },
+      { ar: 'ديكورات منزلية', en: 'Home Decor' }
+    ]
+  },
+  {
+    slug: 'c-clothes',
+    title: { ar: 'ملابس وأزياء', en: 'Clothing and Fashion' },
+    image: '/cat-clothes.svg',
+    subs: [
+      { ar: 'رجالي', en: 'Men' },
+      { ar: 'نسائي', en: 'Women' },
+      { ar: 'أطفال', en: 'Kids' },
+      { ar: 'أحذية وحقائب', en: 'Shoes and Bags' },
+      { ar: 'إكسسوارات وساعات', en: 'Accessories and Watches' }
+    ]
+  },
+  {
+    slug: 'c-beauty',
+    title: { ar: 'جمال وصحة', en: 'Beauty and Health' },
+    image: '/cat-beauty.svg',
+    subs: [
+      { ar: 'مستحضرات تجميل', en: 'Cosmetics' },
+      { ar: 'عطور', en: 'Perfumes' },
+      { ar: 'أجهزة عناية', en: 'Personal Care' }
+    ]
+  },
+  {
+    slug: 'c-hobbies',
+    title: { ar: 'أدوات وهوايات', en: 'Tools and Hobbies' },
+    image: '/cat-hobbies.svg',
+    subs: [
+      { ar: 'رياضة ولياقة', en: 'Sports and Fitness' },
+      { ar: 'أدوات موسيقية', en: 'Musical Instruments' },
+      { ar: 'كتب ومستلزمات دراسية', en: 'Books and Stationery' },
+      { ar: 'ألعاب وهدايا', en: 'Toys and Gifts' }
+    ]
+  },
+  {
+    slug: 'c-auto',
+    title: { ar: 'سيارات وملحقاتها', en: 'Cars and Accessories' },
+    image: '/cat-auto.svg',
+    subs: [
+      { ar: 'سيارات مستعملة', en: 'Used Cars' },
+      { ar: 'دراجات', en: 'Motorcycles' },
+      { ar: 'قطع غيار', en: 'Auto Parts' },
+      { ar: 'إكسسوارات السيارات', en: 'Car Accessories' }
+    ]
+  }
 ];
 
 
 
-const imageFor = (name = '') => {
-
-  const n = String(name);
-
-  if (n.includes('إلكترون')) return '/cat-electronics.svg';
-
-  if (n.includes('أثاث') || n.includes('ديكور')) return '/cat-furniture.svg';
-
-  if (n.includes('ملابس') || n.includes('أزياء')) return '/cat-clothes.svg';
-
-  if (n.includes('سيارات') || n.includes('سيارة')) return '/cat-auto.svg';
-
-  if (n.includes('جمال') || n.includes('صحة')) return '/cat-beauty.svg';
-
-  if (n.includes('هوايات') || n.includes('رياضة') || n.includes('كتب')) return '/cat-hobbies.svg';
-
-  return '/placeholder.svg';
-
-};
 
 
 
@@ -58,11 +99,28 @@ export default function Categories() {
 
   const [items, setItems] = useState(FALLBACK_TILES);
 
-  const [anchorEl, setAnchorEl] = useState(null);
-
-  const [openFor, setOpenFor] = useState(null);
 
   const navigate = useNavigate();
+
+
+  // دالة يدوية لربط اسم القسم بالصورة الخاصة به - تدعم العربية والإنجليزية
+  const getSubcategoryImage = (subName) => {
+    if (!subName) return '/placeholder.svg';
+
+    // ابدأ بإضافة صورك هنا بناءً على الكلمات المفتاحية
+    if (subName.includes('هواتف') || subName.includes('Phone')) return 'subcategories/phone.jpg';
+    if (subName.includes('حواسيب') || subName.includes('Computer') || subName.includes('لابتوب') || subName.includes('labtop')) return 'subcategories/labtop.jpg';
+    if (subName.includes('سماعات وساعات') || subName.includes('Headphones')) return 'subcategories/clock.jpg';
+    if (subName.includes('أجهزة منزلية') || subName.includes('Home Appliances')) return 'subcategories/dvicehome.jpg';
+    if (subName.includes('غرف نوم') || subName.includes('Bedrooms')) return 'subcategories/room.jpg';
+    if (subName.includes('غرف جلوس') || subName.includes('Living Rooms')) return 'subcategories/room1.jpg';
+    if (subName.includes('مكاتب وكراسي') || subName.includes('Desks and Chairs')) return 'subcategories/mm.jpg';
+    if (subName.includes('ديكورات منزلية') || subName.includes('Home Decor')) return 'subcategories/mmm.jpg';
+
+
+    // هذه الصورة ستظهر إذا لم تقم بإضافة صورة للقسم بعد
+    return '/placeholder.svg';
+  };
 
 
 
@@ -76,47 +134,31 @@ export default function Categories() {
 
         const res = await axiosInstance.get('/categories');
 
-        const data = Array.isArray(res) ? res : [];
+        const data = Array.isArray(res.data) ? res.data : [];
 
         if (!mounted) return;
 
         if (data.length) {
 
-          const mapped = data.map((c) => {
+          const mapped = data.map((c) => ({
 
-            // جلب الأقسام الفرعية
+            id: c.id,
 
-            const subCats = Array.isArray(c.subCategories) ? c.subCategories : [];
+            slug: String(c.slug || c.id || ''),
 
-            const subs = subCats.length > 0
+            title: c.title || 'بدون اسم',
 
-              ? subCats.map((s) => ({ id: String(s.categoryId), name: s.nameAr || s.name }))
+            image: c.image !== '/placeholder.svg' ? c.image : getSubcategoryImage(c.title),
 
-              : []; // إذا لم تكن هناك أقسام فرعية من API، استخدم fallback
+            subs: Array.isArray(c.subs) ? c.subs : [],
 
-
-
-            return {
-
-              slug: String(c.categoryId),
-
-              title: c.nameAr || c.name,
-
-              image: imageFor(c.nameAr || c.name),
-
-              subs: subs.length > 0 ? subs : (FALLBACK_TILES.find(ft => ft.title === (c.nameAr || c.name))?.subs || []),
-
-            };
-
-          });
+          }));
 
           setItems(mapped);
 
         }
 
       } catch (err) {
-
-        console.warn('Failed to load categories:', err?.message);
 
         // keep fallback
 
@@ -132,227 +174,132 @@ export default function Categories() {
 
 
 
-  const goTo = (slug) => navigate(`/?category=${slug}`);
 
-  const openDetails = (slug) => navigate(`/categories/${slug}`);
 
-  const handleOpenSubs = (event, slug) => {
 
-    setAnchorEl(event.currentTarget);
-
-    setOpenFor(slug);
-
-  };
-
-  const handleCloseSubs = () => {
-
-    setAnchorEl(null);
-
-    setOpenFor(null);
-
-  };
 
 
 
   return (
 
+    <Container sx={{ mt: 4, mb: 4 }}>
 
-
-    <Container sx={{ mt: 4 }}>
-
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
+      <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}>
 
         {t('categories')}
 
       </Typography>
 
-      <Grid container spacing={12}>
+      {items.map((category, index) => (
 
-        {items.map((c) => (
+        <Box key={category.id || index}>
 
-          <Grid item xs={12} sm={6} md={4} key={c.slug} sx={{ display: 'flex' }}>
+          {/* Main Category Header */}
 
-            <Card sx={{
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
 
-              borderRadius: 7,
+            <Avatar
 
-              overflow: 'hidden',
+              src={category.image}
 
-              boxShadow: '10px 10px 28px rgba(11,29,57,0.24)',
+              alt={category.title}
 
-              display: 'flex',
+              sx={{ width: 48, height: 48, mr: 2, bgcolor: 'primary.main' }}
 
-              flexDirection: 'column',
+            >
 
-              width: '100%',
+              {typeof category.title === 'object'
+                ? (getCurrentLang() === 'ar' ? category.title.ar : category.title.en).charAt(0) || ''
+                : (category.title || '').charAt(0) || ''
+              }
 
-              height: '90%'
+            </Avatar>
 
-            }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
+              {typeof category.title === 'object'
+                ? (getCurrentLang() === 'ar' ? category.title.ar : category.title.en)
+                : category.title || 'قسم بدون اسم'
+              }
+            </Typography>
 
-              {/* Image area: navigates to products */}
+          </Box>
 
-              <CardActionArea onClick={() => goTo(c.slug)} sx={{ position: 'relative' }}>
+          {/* Subcategories Grid */}
 
-                <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+          {category.subs?.length > 0 ? (
 
-                  <Box sx={{ pt: '100%' }} />
+            <Grid container spacing={2} sx={{ mb: 3, ml: 7 }}>
 
-                  <Box sx={{ position: 'absolute', inset: 0, backgroundImage: `url(${c.image})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'transform .3s ease', '&:hover': { transform: 'scale(1.02)' } }} />
+              {category.subs.filter(Boolean).map((sub, subIndex) => {
+                // Handle both string and object formats for subcategories
+                const subValue = typeof sub === 'string' ? sub : (sub.en || sub.ar || sub);
 
-                </Box>
+                const handleClick = () => {
+                  const query = encodeURIComponent(subValue || '');
 
-                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.65) 100%)' }} />
+                  // Create a unique ID for the subcategory using category.id and subIndex
+                  const subcategoryId = `${category.id}-${subIndex}`;
 
-              </CardActionArea>
-
-
-
-              {/* Title row + popout icon to details page */}
-
-              <CardContent sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, flexGrow: 1 }}>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-
-                  <Typography variant="h6" sx={{ fontWeight: 800 }}>
-
-                    {c.title}
-
-                  </Typography>
-
-                  <IconButton color="primary" aria-label={t('show_more')} onClick={() => openDetails(c.slug)}>
-
-                    <OpenInNewIcon />
-
-                  </IconButton>
-
-                </Box>
-
-                <Box sx={{ mt: 'auto', pt: 1, textAlign: 'left' }}>
-
-                  <Button size="small" onClick={(e) => handleOpenSubs(e, c.slug)}>{t('show_subs')}</Button>
-
-                </Box>
-
-              </CardContent>
-
-            </Card>
-
-          </Grid>
-
-        ))}
-
-      </Grid>
-
-
-
-      {/* Popover for subcategories */}
-
-      <Popover
-
-        open={Boolean(anchorEl)}
-
-        anchorEl={anchorEl}
-
-        onClose={handleCloseSubs}
-
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-
-        PaperProps={{ sx: { p: 2, width: { xs: 320, sm: 420 }, maxWidth: '90vw' } }}
-
-      >
-
-        {(() => {
-
-          const current = items.find((i) => i.slug === openFor);
-
-          let list = current?.subs || [];
-
-
-
-          // إذا لم تكن هناك أقسام فرعية، استخدم الـ fallback
-
-          if (!list || list.length === 0) {
-
-            const fallbackItem = FALLBACK_TILES.find(ft => ft.slug === openFor);
-
-            if (fallbackItem && fallbackItem.subs) {
-
-              list = fallbackItem.subs.map((name, idx) => ({
-
-                id: `${openFor}-${idx}`,
-
-                name: typeof name === 'string' ? name : name.name
-
-              }));
-
-            }
-
-          }
-
-
-
-          if (!list.length) {
-
-            return (
-
-              <Typography variant="body2" color="text.secondary">
-
-                {t('no_subs')}
-
-              </Typography>
-
-            );
-
-          }
-
-          return (
-
-            <Grid container spacing={2} sx={{ border: 2, borderRadius: 2 }}>
-
-              {list.map((s, idx) => {
-
-                const id = typeof s === 'object' && s !== null ? s.id : undefined;
-
-                const name = typeof s === 'object' && s !== null ? s.name : String(s);
-
-                const onClick = () => {
-
-                  if (id) {
-
-                    navigate(`/?category=${id}`);
-
-                  } else if (openFor) {
-
-                    const q = encodeURIComponent(name);
-
-                    navigate(`/?category=${openFor}&q=${q}`);
-
-                  }
-
-                  handleCloseSubs();
-
+                  navigate(`/?categoryId=${subcategoryId}&q=${query}`);
                 };
 
                 return (
 
-                  <Grid item size={{ xs: 12, sm: 6 }} key={id || `${openFor}-${idx}`}>
+                  <Grid item xs={6} sm={4} md={3} key={subIndex}>
 
-                    <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 10px 28px rgba(11,29,57,0.24)' }}>
+                    <Card
 
-                      <CardActionArea onClick={onClick}>
+                      elevation={1}
 
-                        <Zoom in={true} style={{ transitionDelay: `${idx * 200}ms` }} key={id || `${openFor}-${idx}`}>
+                      sx={{
 
-                          <Box sx={{ p: 3, minHeight: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #e3f2fd 0%, #ffffff 100%)' }}>
+                        borderRadius: 2,
 
-                            <Typography variant="subtitle1" sx={{ fontWeight: 700, textAlign: 'center' }}>{name}</Typography>
+                        '&:hover': {
 
-                          </Box>
+                          transform: 'scale(1.02)',
 
-                        </Zoom>
+                          transition: 'transform 0.2s ease'
+
+                        }
+
+                      }}
+
+                    >
+
+                      <CardActionArea onClick={handleClick}>
+
+                        <CardContent sx={{ p: 0, m: 5, textAlign: 'center' }}>
+
+                          <CardMedia
+
+                            component="img"
+
+                            image={getSubcategoryImage(subValue)}
+
+                            alt={subValue}
+
+                            sx={{ width: '100%', height: '120px', objectFit: 'cover', mb: 2 }}
+
+                          />
+
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: '1.1rem',
+                              color: 'primary.dark',
+                              textAlign: 'center',
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {typeof sub === 'object'
+                              ? (getCurrentLang() === 'ar' ? sub.ar : sub.en)
+                              : sub
+                            }
+                          </Typography>
+
+                        </CardContent>
 
                       </CardActionArea>
 
@@ -364,31 +311,35 @@ export default function Categories() {
 
               })}
 
-              <Grid item xs={12}>
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-
-                  <Button onClick={() => { if (openFor) openDetails(openFor); handleCloseSubs(); }}>
-
-                    {t('show_more')}
-
-                  </Button>
-
-                </Box>
-
-              </Grid>
-
             </Grid>
 
-          );
+          ) : (
 
-        })()}
+            <Box sx={{ ml: 7, mb: 3 }}>
 
-      </Popover>
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+
+                لا توجد أقسام فرعية
+
+              </Typography>
+
+            </Box>
+
+          )}
+
+          {/* Divider - only show if not the last item */}
+
+          {index < items.length - 1 && (
+
+            <Divider sx={{ my: 4, borderBottomWidth: 2 }} />
+
+          )}
+
+        </Box>
+
+      ))}
 
     </Container>
-
-
 
   );
 

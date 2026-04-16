@@ -19,7 +19,7 @@ import { getMyFavorites } from "../api/favoritesAPI";
 import { Link as RouterLink, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { t, toggleLang } from "../i18n";
-import { listChats } from "../api/messagesAPI";
+// import { listChats } from "../api/messagesAPI";
 import axiosInstance from "../api/axiosInstance";
 import ContrastIcon from '@mui/icons-material/Contrast';
 import { styled } from '@mui/material/styles';
@@ -53,7 +53,7 @@ export default function Navbar() {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [favCount, setFavCount] = useState(0);
-  const [chatCount, setChatCount] = useState(0);
+  // const [chatCount, setChatCount] = useState(0);
   const [cartCount, setCartCount] = useState(4);
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,7 +67,7 @@ export default function Navbar() {
     { label: t('cart'), path: '/cart', icon: <ShoppingCartIcon /> },
     { label: t('my_products') || 'إعلاناتي', path: '/my-products', icon: <ViewListIcon /> },
     { label: t('favorites'), path: '/favorites', icon: <FavoriteIcon /> },
-    { label: t('my_messages') || 'رسائلي', path: '/chats', icon: <MessageIcon /> },
+    // { label: t('my_messages') || 'رسائلي', path: '/chats', icon: <MessageIcon /> },
     { label: t('add_product') || 'إضافة إعلان', path: '/add-product', icon: <AddBoxIcon />, requiresAuth: true },
   ];
 
@@ -173,22 +173,22 @@ export default function Navbar() {
   }, []);
 
   // Load chats count for "My Messages" badge
-  useEffect(() => {
-    let mounted = true;
-    const loadChats = async () => {
-      try {
-        if (!token) { if (mounted) setChatCount(0); return; }
-        const res = await listChats();
-        const data = res?.data ?? res;
-        const items = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
-        if (mounted) setChatCount(items.length || 0);
-      } catch (_) {
-        if (mounted) setChatCount(0);
-      }
-    };
-    loadChats();
-    return () => { mounted = false; };
-  }, [token]);
+  // useEffect(() => {
+  //   let mounted = true;
+  //   const loadChats = async () => {
+  //     try {
+  //       if (!token) { if (mounted) setChatCount(0); return; }
+  //       const res = await listChats();
+  //       const data = res?.data ?? res;
+  //       const items = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
+  //       if (mounted) setChatCount(items.length || 0);
+  //     } catch (_) {
+  //       if (mounted) setChatCount(0);
+  //     }
+  //   };
+  //   loadChats();
+  //   return () => { mounted = false; };
+  // }, [token]);
 
   useEffect(() => {
     let mounted = true;
@@ -690,7 +690,7 @@ export default function Navbar() {
                 <ListItemText>{t('profile')}</ListItemText>
               </MenuItem>
 
-              <MenuItem
+              {/* <MenuItem
                 onClick={() => { handleCloseUserMenu(); navigate('/chats'); }}
                 sx={{
                   '&:hover': {
@@ -703,7 +703,7 @@ export default function Navbar() {
                   <MessageIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText>{t('my_messages')}</ListItemText>
-              </MenuItem>
+              </MenuItem> */}
 
               <MenuItem
                 onClick={() => { handleCloseUserMenu(); navigate('/my-products'); }}

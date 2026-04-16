@@ -33,7 +33,7 @@ export default function MyProducts() {
 
 
   const handleOpenOffer = (p) => {
-    console.log("المنتج المختار:", p); // للتأكد في الكونسول
+    // للتأكد في الكونسول
     setSelectedProduct(p); // ✅ نخزن هذا المنتج تحديداً
     setShowOfferDialog(true);
   }

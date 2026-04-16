@@ -17,7 +17,8 @@ import CategoryDetails from "./pages/CategoryDetails";
 import AddProduct from "./pages/AddProduct";
 import Cart from "./pages/Cart";
 import Favorites from "./pages/Favorites";
-import Chats from "./pages/Chats";
+import MyPurchases from "./pages/MyPurchases";
+// import Chats from "./pages/Chats";
 import PaymentSuccess from "./pages/PaymentSuccess";
 // لاحقاً نضيف باقي الصفحات هنا (Register, Home, MyProducts ...)
 import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
@@ -28,6 +29,7 @@ import Footer from "./components/Footer";
 import Offers from "./pages/Offers";
 import EditProduct from "./pages/EditProduct";
 import ScrollToTop from "./components/ScrollToTop";
+import ChatLayout from "./components/chat/ChatLayout";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
 export default function App() {
@@ -120,7 +122,9 @@ export default function App() {
           <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-          <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+          <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatLayout /></ProtectedRoute>} />
+          {/* <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} /> */}
           <Route path="/payment/zain-cash/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />

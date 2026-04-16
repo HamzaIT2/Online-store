@@ -202,12 +202,12 @@ export default function Offers() {
         setLoading(true)
         // 1. نجلب كل المنتجات
         const response = await axiosInstance.get('/products');
-        console.log("API Response Structure:", response);
-        console.log("Response Data:", response.data);
 
-        const allProducts = Array.isArray(response?.data) ? response.data : [];
-        console.log("All Products after extraction:", allProducts)
-        console.log("Number of products:", allProducts.length);
+
+
+        let allProducts = Array.isArray(response?.data) ? response.data : [];
+
+
 
         // Check if the response has pagination metadata
         const pagination = response.data.pagination || response.data.meta || {};
@@ -228,7 +228,7 @@ export default function Offers() {
 
         // 2. 🧠 الفلترة الذكية (هنا السحر)
         const activeOffers = allProducts.filter((p, index) => {
-          console.log(`\n=== فحص المنتج رقم ${index + 1}: ${p.title} ===`);
+
           // ...
           const currentPrice = Number(p.price);
           const oldPrice = Number(p.oldPrice);
@@ -241,155 +241,155 @@ export default function Offers() {
 
           // الشرط الأول: هل يوجد سعر قديم؟
           const hasDiscount = p.oldPrice && oldPrice > currentPrice;
-          console.log(`hasDiscount: ${hasDiscount} (oldPrice: ${oldPrice}, currentPrice: ${currentPrice})`);
+          `);
 
           // الشرط الثاني: هل الوقت لم ينتهِ بعد؟
           // (إذا كان التاريخ موجوداً نتحقق منه، وإذا لم يكن موجوداً نعتبر العرض دائم)
           const isNotExpired = p.offerExpiresAt
             ? new Date(p.offerExpiresAt) > new Date()
             : true;
-          console.log(`isNotExpired: ${isNotExpired} (expiresAt: ${p.offerExpiresAt})`);
+          `
 
-          const finalResult = hasDiscount && isNotExpired;
-          console.log(`النتيجة النهائية: ${finalResult ? "✅ سيتم العرض" : "❌ لن يتم العرض"}`);
+        const finalResult = hasDiscount && isNotExpired;
 
-          return finalResult;
-        });
 
-        console.log(`\n=== النتائج النهائية ===`);
-        console.log(`عدد المنتجات الإجمالي: ${allProducts.length}`);
-        console.log(`عدد العروض النشطة: ${activeOffers.length}`);
-        console.log("العروض النشطة:", activeOffers);
+        return finalResult;
+          })
 
-        setProducts(activeOffers);
-      } catch (err) {
-        console.error("Failed to fetch offers", err);
-      } finally {
-        setLoading(false);
-      }
+
+
+
+
+
+  setProducts(activeOffers);
+} catch (err) {
+  console.error("Failed to fetch offers", err);
+} finally {
+  setLoading(false);
+}
     };
-    fetchOffers();
+fetchOffers();
   }, []);
 
-  return (
-    <Container maxWidth="xl" sx={{ mt: 5, mb: 8 }}>
+return (
+  <Container maxWidth="xl" sx={{ mt: 5, mb: 8 }}>
 
-      {/* البانر العلوي */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)',
-          borderRadius: 4,
-          p: 4,
-          mb: 6,
-          color: 'white',
-          textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(211, 47, 47, 0.3)'
-        }}
-      >
-        <Typography variant="h3" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-          <LocalOffer fontSize="large" /> {t('flash_sale') || "عروض لفترة محدودة"}
-        </Typography>
-        <Typography variant="h6" sx={{ opacity: 0.9 }}>
-          اغتنم الفرصة قبل انتهاء الوقت!
-        </Typography>
-      </Box>
+    {/* البانر العلوي */}
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)',
+        borderRadius: 4,
+        p: 4,
+        mb: 6,
+        color: 'white',
+        textAlign: 'center',
+        boxShadow: '0 8px 32px rgba(211, 47, 47, 0.3)'
+      }}
+    >
+      <Typography variant="h3" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+        <LocalOffer fontSize="large" /> {t('flash_sale') || "عروض لفترة محدودة"}
+      </Typography>
+      <Typography variant="h6" sx={{ opacity: 0.9 }}>
+        اغتنم الفرصة قبل انتهاء الوقت!
+      </Typography>
+    </Box>
 
-      {/* شبكة المنتجات */}
-      <Grid container spacing={3}>
-        {loading ? (
-          Array.from(new Array(4)).map((_, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 2 }} />
-              <Skeleton width="60%" sx={{ mt: 1 }} />
-            </Grid>
-          ))
-        ) : products.length > 0 ? (
-          products.map((product) => {
-            // حساب نسبة الخصم
-            const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+    {/* شبكة المنتجات */}
+    <Grid container spacing={3}>
+      {loading ? (
+        Array.from(new Array(4)).map((_, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 2 }} />
+            <Skeleton width="60%" sx={{ mt: 1 }} />
+          </Grid>
+        ))
+      ) : products.length > 0 ? (
+        products.map((product) => {
+          // حساب نسبة الخصم
+          const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
 
-            return (
-              <Grid item xs={12} sm={6} md={3} key={product.id || product.productId}>
-                <Card
-                  sx={{
-                    position: 'relative',
-                    borderRadius: 3,
-                    transition: '0.3s',
-                    '&:hover': { transform: 'translateY(-5px)', boxShadow: 6 },
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => navigate(`/products/${product.id || product.productId}`)}
-                >
-                  {/* شارة نسبة الخصم */}
-                  <Chip
-                    label={`-${discount}%`}
-                    color="error"
-                    size="small"
-                    sx={{ position: 'absolute', top: 10, left: 10, fontWeight: 'bold', zIndex: 1 }}
-                  />
+          return (
+            <Grid item xs={12} sm={6} md={3} key={product.id || product.productId}>
+              <Card
+                sx={{
+                  position: 'relative',
+                  borderRadius: 3,
+                  transition: '0.3s',
+                  '&:hover': { transform: 'translateY(-5px)', boxShadow: 6 },
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate(`/products/${product.id || product.productId}`)}
+              >
+                {/* شارة نسبة الخصم */}
+                <Chip
+                  label={`-${discount}%`}
+                  color="error"
+                  size="small"
+                  sx={{ position: 'absolute', top: 10, left: 10, fontWeight: 'bold', zIndex: 1 }}
+                />
 
-                  {/* العداد التنازلي فوق الصورة (اختياري) */}
-                  {product.offerExpiresAt && (
-                    <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1 }}>
-                      <CountdownTimer targetDate={product.offerExpiresAt} />
-                    </Box>
+                {/* العداد التنازلي فوق الصورة (اختياري) */}
+                {product.offerExpiresAt && (
+                  <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1 }}>
+                    <CountdownTimer targetDate={product.offerExpiresAt} />
+                  </Box>
+                )}
+
+                <CardMedia
+                  component="img"
+                  height="220"
+                  // معالجة رابط الصورة
+                  image={product.images && product.images.length > 0
+                    ? (product.images[0].url.startsWith('http') ? product.images[0].url : `http://localhost:3000${product.images[0].url.startsWith('/') ? '' : '/'}${product.images[0].url}`)
+                    : '/placeholder.jpg'}
+                  alt={product.title}
+                  sx={{ objectFit: 'cover' }}
+                />
+
+                <CardContent>
+                  <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                    {product.title}
+                  </Typography>
+
+                  {/* الأسعار */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <Typography variant="h6" color="error.main" fontWeight="bold">
+                      {Number(product.price).toLocaleString()} د.ع
+                    </Typography>
+                    <Typography variant="body2" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
+                      {Number(product.oldPrice).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  {/* تنبيه إذا قارب الوقت على الانتهاء */}
+                  {product.offerExpiresAt && new Date(product.offerExpiresAt) < new Date(Date.now() + 86400000) && (
+                    <Typography variant="caption" color="error" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                      <AccessTime fontSize="inherit" sx={{ mr: 0.5 }} /> ينتهي قريباً جداً!
+                    </Typography>
                   )}
 
-                  <CardMedia
-                    component="img"
-                    height="220"
-                    // معالجة رابط الصورة
-                    image={product.images && product.images.length > 0
-                      ? (product.images[0].url.startsWith('http') ? product.images[0].url : `http://localhost:3000${product.images[0].url.startsWith('/') ? '' : '/'}${product.images[0].url}`)
-                      : '/placeholder.jpg'}
-                    alt={product.title}
-                    sx={{ objectFit: 'cover' }}
-                  />
-
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                      {product.title}
-                    </Typography>
-
-                    {/* الأسعار */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                      <Typography variant="h6" color="error.main" fontWeight="bold">
-                        {Number(product.price).toLocaleString()} د.ع
-                      </Typography>
-                      <Typography variant="body2" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
-                        {Number(product.oldPrice).toLocaleString()}
-                      </Typography>
-                    </Box>
-
-                    {/* تنبيه إذا قارب الوقت على الانتهاء */}
-                    {product.offerExpiresAt && new Date(product.offerExpiresAt) < new Date(Date.now() + 86400000) && (
-                      <Typography variant="caption" color="error" sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                        <AccessTime fontSize="inherit" sx={{ mr: 0.5 }} /> ينتهي قريباً جداً!
-                      </Typography>
-                    )}
-
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      sx={{ mt: 2, borderRadius: 2 }}
-                      startIcon={<ShoppingCart />}
-                    >
-                      شراء الآن
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })
-        ) : (
-          <Box sx={{ width: '100%', textAlign: 'center', py: 8 }}>
-            <Typography variant="h5" color="text.secondary">
-              لا توجد عروض نشطة حالياً، تفقد الموقع لاحقاً!
-            </Typography>
-          </Box>
-        )}
-      </Grid>
-    </Container>
-  );
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2, borderRadius: 2 }}
+                    startIcon={<ShoppingCart />}
+                  >
+                    شراء الآن
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })
+      ) : (
+        <Box sx={{ width: '100%', textAlign: 'center', py: 8 }}>
+          <Typography variant="h5" color="text.secondary">
+            لا توجد عروض نشطة حالياً، تفقد الموقع لاحقاً!
+          </Typography>
+        </Box>
+      )}
+    </Grid>
+  </Container>
+);
 }

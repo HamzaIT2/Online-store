@@ -47,6 +47,8 @@ export default function AddProduct() {
   const [success, setSuccess] = useState('');
 
   const [categories, setCategories] = useState([]);
+  const [selectedMainCategoryId, setSelectedMainCategoryId] = useState('');
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState('');
   const [provinces, setProvinces] = useState([]);
   const [cities, setCities] = useState([]);
 
@@ -54,6 +56,7 @@ export default function AddProduct() {
     title: '',
     description: '',
     categoryId: '',
+    subcategoryId: '',
     price: '',
     condition: 'new',  // Changed from 'good' to 'new' (backend enum)
     provinceId: '',     // Will be set to number when province selected
@@ -83,8 +86,6 @@ export default function AddProduct() {
         setProvinces(provincesData);
 
       } catch (err) {
-        console.error("❌ Failed to load data:", err);
-        console.error("❌ Error response:", err.response?.data);
         setError(t('error_loading_form_data'));
         setProvinces([]);  // Set empty array instead of fallback
       }
@@ -123,8 +124,6 @@ export default function AddProduct() {
         setCities(citiesData);
 
       } catch (e) {
-        console.error("❌ Failed to load cities:", e);
-        console.error("❌ Cities error response:", e.response?.data);
 
         // Set empty cities array - backend data required
         setCities([]);
@@ -135,6 +134,25 @@ export default function AddProduct() {
 
   // --- Handlers (الدوال) ---
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  // Helper function to get subcategories of selected main category
+  const getSelectedCategorySubcategories = () => {
+    const selectedCategory = categories.find(cat =>
+      (cat.id === selectedMainCategoryId) || (cat.categoryId === selectedMainCategoryId)
+    );
+    return selectedCategory?.subs || [];
+  };
+
+  // Handle main category selection
+  const handleMainCategoryChange = (categoryId) => {
+    setSelectedMainCategoryId(categoryId);
+    setSelectedSubCategoryId(''); // Reset subcategory when main category changes
+  };
+
+  // Handle subcategory selection
+  const handleSubcategoryChange = (subcategoryId) => {
+    setSelectedSubCategoryId(subcategoryId);
+  };
 
   const handleImageChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -176,11 +194,17 @@ export default function AddProduct() {
     const requiredFields = {
       title: 'Title is required.',
       price: 'Price is required and must be a valid number.',
-      categoryId: 'Category is required.',
       provinceId: 'Province is required.',
       cityId: 'City is required.',
       condition: 'Condition is required.',
     };
+
+    // Custom validation for category/subcategory
+    if (!selectedSubCategoryId && !selectedMainCategoryId) {
+      setError('Category is required.');
+      setLoading(false);
+      return;
+    }
 
     for (const field in requiredFields) {
       if (!form[field] || form[field] === '0' || (field === 'price' && isNaN(Number(form[field])))) {
@@ -197,17 +221,37 @@ export default function AddProduct() {
     }
 
     // 2. Prepare Payload
+    // Ensure categoryId is a valid number - prioritize subcategory, fallback to main category
+    let categoryIdToSend = null;
+
+    if (selectedSubCategoryId && selectedSubCategoryId !== '') {
+      // For subcategories, we need to find the corresponding main category ID
+      // Since subcategories are strings, we'll use the main category ID as the categoryId
+      categoryIdToSend = Number(selectedMainCategoryId);
+    } else if (selectedMainCategoryId && selectedMainCategoryId !== '') {
+      categoryIdToSend = Number(selectedMainCategoryId);
+    }
+
+    // Final validation
+    if (!categoryIdToSend || isNaN(categoryIdToSend)) {
+      setError('Please select a valid category.');
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       title: form.title,
       description: form.description,
       price: Math.max(0, parseFloat(form.price)),
-      categoryId: Number(form.categoryId),
+      categoryId: categoryIdToSend,
       condition: form.condition,
       provinceId: Number(form.provinceId),
       cityId: Number(form.cityId),
       address: form.address,
       isNegotiable: Boolean(form.isNegotiable),
     };
+
+
 
     try {
       // Create Product
@@ -236,9 +280,6 @@ export default function AddProduct() {
       setSuccess('Product added successfully!');
       setTimeout(() => navigate('/my-products'), 1000);
     } catch (err) {
-      console.error("❌ Product submission failed:", err);
-      console.error("❌ Error response:", err.response?.data);
-      console.error("❌ Error status:", err.response?.status);
 
       const d = err.response?.data;
       const msgs = Array.isArray(d?.message) ? d.message : [d?.message || d?.error || 'Error occurred'];
@@ -318,15 +359,47 @@ export default function AddProduct() {
                   select
                   fullWidth
                   label={t('field_category')}
-                  value={form.categoryId}
-                  onChange={(e) => update('categoryId', e.target.value)}
+                  value={selectedMainCategoryId}
+                  onChange={(e) => handleMainCategoryChange(e.target.value)}
                 >
-
                   {categories.map((c) => {
-                    console.log("🏷️ Category item:", c);
+
+                    // Determine current language
+                    const isArabic = getCurrentLang() === 'ar';
+
                     return (
-                      <MenuItem key={c.categoryId || c.id} value={c.categoryId || c.id}>
-                        {getCurrentLang() === 'ar' ? (c.nameAr || c.name) : (c.nameEn || c.name)}
+                      <MenuItem key={c.id} value={c.id}>
+                        {isArabic ? c.name_ar : c.name}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="القسم الفرعي"
+                  value={selectedSubCategoryId}
+                  onChange={(e) => handleSubcategoryChange(e.target.value)}
+                  disabled={!selectedMainCategoryId || getSelectedCategorySubcategories().length === 0}
+                >
+                  {getSelectedCategorySubcategories().map((sub, index) => {
+                    // Handle both string and object formats for subcategories
+                    const subValue = typeof sub === 'string' ? sub : (sub.en || sub.ar || sub);
+
+                    // Determine current language
+                    const isArabic = getCurrentLang() === 'ar';
+
+                    // Handle multilingual display for subcategories
+                    const subLabel = typeof sub === 'string'
+                      ? sub
+                      : (isArabic ? sub.name_ar : sub.name);
+
+                    return (
+                      <MenuItem key={index} value={subValue}>
+                        {subLabel}
                       </MenuItem>
                     );
                   })}
@@ -371,7 +444,7 @@ export default function AddProduct() {
                   onChange={(e) => update('provinceId', e.target.value)}
                 >
                   {provinces.map((p) => {
-                    console.log("🗺️ Province item:", p);
+
                     return (
                       <MenuItem key={p.provinceId || p.id} value={p.provinceId || p.id}>
                         {getCurrentLang() === 'ar' ? (p.nameAr || p.name) : (p.nameEn || p.name)}
@@ -391,7 +464,7 @@ export default function AddProduct() {
                   disabled={!cities.length}
                 >
                   {cities.map((c) => {
-                    console.log("🏙️ City item:", c);
+
                     return (
                       <MenuItem key={c.cityId || c.id} value={c.cityId || c.id}>
                         {getCurrentLang() === 'ar' ? (c?.nameAr || c?.name) : (c?.nameEn || c?.name)}

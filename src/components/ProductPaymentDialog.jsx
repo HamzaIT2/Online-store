@@ -44,6 +44,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { t } from '../i18n';
 import ZainCashProvider from '../services/zainCashProvider';
+import axiosInstance from '../api/axiosInstance';
 
 const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => {
   const { darkMode } = useTheme();
@@ -85,9 +86,9 @@ const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => 
     }
   };
 
-  const handlePaymentComplete = () => {
-    // For cash on delivery, go to success step
-    setCurrentStep(2);
+  const handlePaymentComplete = async () => {
+    // For cash on delivery, go to success step (order will be created in final step)
+    setCurrentStep(3);
   };
 
   const handleVerificationCodeChange = (e) => {
@@ -177,13 +178,55 @@ const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => 
         return;
       }
     } else if (currentStep === 3) {
-      // On success step, complete the order
+      // On success step, this is the final confirmation
       if (onPaymentComplete) {
-        onPaymentComplete(true, {
-          paymentMethod: paymentMethod,
-          deliveryInfo: deliveryInfo,
-          product: product
-        });
+        // For Zain Cash, order was already saved during verification
+        // For Cash on Delivery, we need to save the order now
+        if (paymentMethod === 'cash') {
+          setLoading(true);
+          setError('');
+
+          try {
+            // Final order data for Cash on Delivery
+            const finalOrderData = {
+              productId: product?.id || product?._id,
+              productName: product?.title || product?.name || 'Product',
+              productImage: product?.images?.[0] || product?.image || '',
+              totalPrice: Number(product?.price || 0),
+              paymentMethod: 'Cash on Delivery',
+              status: 'pending',
+              orderDate: new Date().toISOString(),
+              deliveryInfo: deliveryInfo
+            };
+
+            // Save order to database for Cash on Delivery
+            const response = await axiosInstance.post('/transactions', finalOrderData);
+
+            if (response) {
+              console.log('Cash on Delivery order successfully saved to database');
+              onPaymentComplete(true, {
+                paymentMethod: paymentMethod,
+                deliveryInfo: deliveryInfo,
+                product: product
+              });
+            } else {
+              throw new Error('Failed to save cash on delivery order');
+            }
+          } catch (err) {
+            console.error('Error creating cash on delivery order:', err);
+            setError('Failed to complete order. Please try again.');
+            return;
+          } finally {
+            setLoading(false);
+          }
+        } else {
+          // For Zain Cash, order was already saved during verification, just call success callback
+          onPaymentComplete(true, {
+            paymentMethod: paymentMethod,
+            deliveryInfo: deliveryInfo,
+            product: product
+          });
+        }
       }
       onClose();
     }
@@ -201,11 +244,38 @@ const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => 
       // For now, we'll simulate the verification
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Simulate successful verification
-      setCurrentStep(3); // Go to success step
-      setError('');
+      // ✅ ZAIN CASH PAYMENT SUCCESSFUL - SAVE ORDER TO DATABASE
+      try {
+        const orderData = {
+          productId: product?.id || product?._id,
+          productName: product?.title || product?.name || 'Product',
+          productImage: product?.images?.[0] || product?.image || '',
+          totalPrice: Number(product?.price || 0),
+          paymentMethod: 'ZAIN_CASH',
+          status: 'pending',
+          orderDate: new Date().toISOString(),
+          phoneNumber: phoneNumber,
+          transactionId: paymentIntent?.id || `ZC-${Date.now()}`
+        };
+
+        // Save order to database immediately after successful Zain Cash verification
+        const response = await axiosInstance.post('/transactions', orderData);
+
+        if (response) {
+          console.log('Order successfully saved to database after Zain Cash payment');
+          setCurrentStep(3); // Go to success step
+          setError('');
+        } else {
+          throw new Error('Failed to save order to database');
+        }
+      } catch (orderError) {
+        console.error('Failed to save order to database after successful payment:', orderError);
+        setError('Payment successful but failed to save order. Please contact support.');
+        return; // Don't proceed to success step if order save fails
+      }
     } catch (err) {
-      setError('رمز التحقق غير صحيح. يرجى المحاولة مرة أخرى.');
+      console.error('Error verifying payment:', err);
+      setError('Payment verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -1691,6 +1761,52 @@ const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => 
                 <span>{t('pay_now') || 'ادفع الآن'}</span>
                 <Chip
                   label="سريع"
+                  size="small"
+                  sx={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: '#fff',
+                    fontSize: '0.6rem',
+                    height: 20
+                  }}
+                />
+              </Box>
+            )}
+          </Button>
+        )}
+
+        {/* Final Confirm Button for Step 3 */}
+        {currentStep === 3 && (
+          <Button
+            onClick={handleNext}
+            variant="contained"
+            disabled={loading}
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              color: '#fff',
+              px: 4,
+              py: 2,
+              fontSize: '1rem',
+              fontWeight: 700,
+              borderRadius: '12px',
+              boxShadow: '0 4px 20px rgba(76, 175, 80, 0.3)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #45a049, #4CAF50)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 30px rgba(76, 175, 80, 0.4)'
+              },
+              '&:disabled': {
+                background: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                color: darkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
+              }
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>{t('confirm_order') || 'تأكيد الطلب'}</span>
+                <Chip
+                  label="نهائي"
                   size="small"
                   sx={{
                     background: 'rgba(255, 255, 255, 0.2)',

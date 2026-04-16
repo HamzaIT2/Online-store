@@ -80,7 +80,7 @@ class ZainCashProvider {
   async verifyPayment(transactionId) {
     try {
       // For demo purposes, simulate successful payment verification
-      console.log('Verifying Zain Cash payment:', transactionId);
+      
 
       // Simulate API response for demo
       const mockVerification = {
@@ -138,7 +138,7 @@ class ZainCashProvider {
   // Redirect to payment
   async redirectToPayment(paymentIntent, phoneNumber) {
     // For demo purposes, just show an alert
-    console.log('Redirecting to Zain Cash payment:', paymentIntent);
+    
     
     // In production, this would check if app is installed and redirect accordingly
     /*

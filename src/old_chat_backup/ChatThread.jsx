@@ -25,7 +25,7 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
       // Fetch user data for each unique sender
       for (const userId of userIds) {
         if (!newCache[userId]) {
-          console.log('Fetching user data for message sender ID:', userId);
+
 
           // Try multiple endpoints based on your API
           const endpoints = [
@@ -35,9 +35,9 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
 
           for (const endpoint of endpoints) {
             try {
-              console.log('Trying endpoint for message user:', endpoint);
+
               const response = await axiosInstance.get(endpoint);
-              console.log('Success with endpoint for message user:', endpoint, 'data:', response.data);
+
 
               let userData = response.data;
 
@@ -48,7 +48,7 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
                   user.userId === userId ||
                   user.uid === userId
                 );
-                console.log('Found user in list for message:', userData);
+
               }
 
               if (userData) {
@@ -56,7 +56,7 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
                 break; // Success, stop trying other endpoints
               }
             } catch (error) {
-              console.log('Failed endpoint for message user:', endpoint, 'error:', error.response?.status || error.message);
+
             }
           }
         }
@@ -135,28 +135,28 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
     // Try to get user from cache first
     if (senderId && userCache[senderId]) {
       const user = userCache[senderId];
-      console.log('Found user in cache for message:', user);
+
 
       const avatar = user.avatar || user.profileImage || user.photo || user.image ||
         user.avatarUrl || user.imageUrl || user.photoUrl || user.pictureUrl;
 
       if (avatar) {
-        console.log('Found avatar in user data for message:', avatar);
+
         return processAvatarUrl(avatar);
       }
     }
 
     // Fallback to message data
     const user = msg.sender || msg.user || msg.fromUser;
-    console.log('Message object:', msg);
-    console.log('Message sender/user:', user);
+
+
 
     if (!user) return null;
 
     const avatar = user.avatar || user.profileImage || user.photo || user.image ||
       user.avatarUrl || user.imageUrl || user.photoUrl || user.pictureUrl;
 
-    console.log('Avatar found:', avatar);
+
 
     if (!avatar) return null;
 
@@ -174,7 +174,7 @@ export default function ChatThread({ messages, loading, error, currentUserId }) 
 
       return origin + '/' + str.replace(/^\.\//, '');
     } catch (error) {
-      console.log('Avatar resolution error in ChatThread:', error, 'avatar:', candidate);
+
     }
     return candidate;
   };

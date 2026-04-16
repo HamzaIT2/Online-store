@@ -1,11 +1,12 @@
 import { Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert, Rating, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import FavoriteToggle from "./FavoriteToggle";
-import ProductCardChatButton from "./ProductCardChatButton";
+import { createOrGetChat } from "../api/messagesAPI";
 import { t } from "../i18n";
 import axiosInstance from "../api/axiosInstance";
 import { useState, useEffect } from "react";
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import MessageIcon from '@mui/icons-material/Message';
 import CountdownTimer from "./CountdownTimer";
 
 // Get current language
@@ -61,6 +62,32 @@ export default function ProductCard({ product }) {
     if (product?.productId) navigate(`/products/${product.productId}`);
   };
 
+  const getSellerUserId = (p) => {
+    if (!p) return undefined;
+    return p?.seller?.userId || p?.seller?.id || p?.user?.userId || p?.user?.id || p?.sellerId || p?.userId || p?.ownerId;
+  };
+
+  const handleMessageSeller = async (e) => {
+    e?.stopPropagation?.();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    const sellerId = getSellerUserId(product);
+    const productId = product?.productId || product?.id;
+    if (!sellerId || !productId) return;
+    try {
+      const res = await createOrGetChat({ sellerId, productId });
+      const payload = res?.data ?? res;
+      const chat = payload?.data ?? payload ?? {};
+      const chatId = chat?.id ?? chat?.chatId;
+      if (chatId) navigate(`/chat?chatId=${chatId}`, { state: { chat } }); else navigate('/chat');
+    } catch (_) {
+      navigate('/chat');
+    }
+  };
+
   const handleAddToCart = () => {
     try {
       const key = 'cart';
@@ -78,7 +105,7 @@ export default function ProductCard({ product }) {
       const exists = current.some((p) => String(p?.productId) === String(minimal?.productId));
       const next = exists ? current : [...current, minimal];
       localStorage.setItem(key, JSON.stringify(next));
-      console.log('Added to cart:', minimal);
+
       // Trigger cart update event
       window.dispatchEvent(new Event('cart:updated'));
       setSnackbarOpen(true);
@@ -302,25 +329,23 @@ export default function ProductCard({ product }) {
             <Button
               variant="outlined"
               color="primary"
+              onClick={(e) => { e.stopPropagation(); handleMessageSeller(e); }}
+              sx={{ minWidth: 44 }}
+            >
+              <MessageIcon />
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
               onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>
               <AddShoppingCartIcon />
             </Button>
-
-
-
-
-
             <Button
               variant="contained"
               color="error"
               onClick={(e) => { e.stopPropagation(); handleDetails(); }}>
               {t('buy_now')}
             </Button>
-            <ProductCardChatButton
-              sellerId={product?.userId || product?.sellerId}
-              productId={product?.id || product?.productId}
-              productName={product?.title}
-            />
           </Box>
         </Box>
       </Card>

@@ -156,6 +156,9 @@ const dict = {
     confirm_delete: "تأكيد الحذف",
     confirm_delete_text: "هل أنت متأكد من حذف هذا المنتج؟",
     remove: "إزالة",
+    subcategories: "الاقسام الفرعية",
+    no_subcategories: "لا توجد أقسام فرعية",
+    
     
     // Empty State Translations
     no_favorites: "لا توجد عناصر مفضلة",
@@ -533,6 +536,9 @@ const dict = {
     confirm_delete: "Confirm Delete",
     confirm_delete_text: "Are you sure you want to delete this product?",
     remove: "Remove",
+    subcategories: "Subcategories",
+    no_subcategories: "No subcategories",
+    
     
     // Empty State Translations
     no_favorites: "No favorites yet",

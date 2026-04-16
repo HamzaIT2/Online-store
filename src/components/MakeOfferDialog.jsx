@@ -50,12 +50,12 @@ export default function MakeOfferDialog({ open, onClose, product, onSuccess }) {
                 offerExpiresAt: expiryDate.toISOString()
             };
 
-            console.log("إرسال بيانات العرض:", payload);
+
 
             // 2. استخدام الـ ID المستخرج في الرابط
             const response = await axiosInstance.patch(`/products/${productId}`, payload);
 
-            console.log("تم تحديث المنتج بنجاح:", response.data);
+
 
             onSuccess();
             onClose();

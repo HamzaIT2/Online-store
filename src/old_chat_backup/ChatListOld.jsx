@@ -21,12 +21,12 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
           chat.otherUser?.id || chat.user?.id || chat.seller?.id || chat.buyer?.id ||
           chat.participants?.find(p => p.id !== currentUserId)?.id;
 
-        console.log('Trying to fetch user for chat ID:', chat.id, 'with user ID:', userId);
+
 
         // If no user ID found in chat data, try to get it from messages
         if (!userId) {
           try {
-            console.log('No user ID in chat data, fetching messages to find user...');
+
             const messagesResponse = await axiosInstance.get(`/chats/${chat.id}/messages?limit=10`);
             const messages = Array.isArray(messagesResponse.data) ? messagesResponse.data :
               (messagesResponse.data?.data || messagesResponse.data?.items || []);
@@ -39,18 +39,18 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
 
             if (otherUserMessage) {
               userId = otherUserMessage.senderId || otherUserMessage.sender_id || otherUserMessage.fromUserId;
-              console.log('Found user ID from messages:', userId);
+
 
               // Also try to get user data from the message itself
               const user = otherUserMessage.sender || otherUserMessage.user || otherUserMessage.fromUser;
               if (user && (user.avatar || user.profileImage || user.photo || user.image)) {
-                console.log('Found user data directly in message:', user);
+
                 newCache[userId] = user;
                 continue; // Skip to next chat since we have user data
               }
             }
           } catch (error) {
-            console.log('Failed to get messages for user ID extraction:', error);
+
           }
         }
 
@@ -63,9 +63,9 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
 
           for (const endpoint of endpoints) {
             try {
-              console.log('Trying endpoint:', endpoint);
+
               const response = await axiosInstance.get(endpoint);
-              console.log('Success with endpoint:', endpoint, 'data:', response.data);
+
 
               let userData = response.data;
 
@@ -77,7 +77,7 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
                   user.uid === userId ||
                   user.id === chat.userId
                 );
-                console.log('Found user in list:', userData);
+
               }
 
               if (userData) {
@@ -85,7 +85,7 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
                 break; // Success, stop trying other endpoints
               }
             } catch (error) {
-              console.log('Failed endpoint:', endpoint, 'error:', error.response?.status || error.message);
+
             }
           }
         }
@@ -110,12 +110,12 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
     const user = userId ? userCache[userId] : null;
 
     if (user) {
-      console.log('Found user in cache:', user);
+
       const avatar = user.avatar || user.profileImage || user.photo || user.image ||
         user.avatarUrl || user.imageUrl || user.photoUrl || user.pictureUrl;
 
       if (avatar) {
-        console.log('Found avatar in user data:', avatar);
+
         return processAvatarUrl(avatar);
       }
     }
@@ -145,7 +145,7 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
     }
 
     const candidate = flat || nested || fromParticipants || null;
-    console.log('Final avatar candidate:', candidate);
+
 
     if (!candidate) return undefined;
 
@@ -164,7 +164,7 @@ export default function ChatList({ chats, loading, error, selectedId, onSelect, 
       // Common relative paths like "uploads/...", "files/...", "public/..."
       return origin + '/' + str.replace(/^\.\//, '');
     } catch (error) {
-      console.log('Avatar resolution error:', error, 'candidate:', candidate);
+
     }
     return candidate;
   };

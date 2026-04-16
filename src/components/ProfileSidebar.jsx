@@ -483,7 +483,7 @@ export default function ProfileDrawer({ open, onClose }) {
                         <ListItemText primary={currentLang === 'ar' ? "إدارة منتجاتي" : "My Products"} primaryTypographyProps={{ textAlign: isRTL ? 'right' : 'left', fontWeight: 'medium' }} />
                     </ListItemButton>
 
-                    <ListItemButton onClick={() => { navigate('/chats'); onClose(); }} sx={fancyItemSx}>
+                    <ListItemButton onClick={() => { navigate('/chat'); onClose(); }} sx={fancyItemSx}>
                         <ListItemIcon sx={{ minWidth: 40, transition: '0.3s' }}>
                             <MessageIcon />
                         </ListItemIcon>

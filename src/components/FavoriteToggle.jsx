@@ -63,7 +63,7 @@ export default function FavoriteToggle({ productId, size = "medium" }) {
       if (isFav) {
         try {
           const r = await removeFavoriteByProduct(productId);
-          console.log('removeFavoriteByProduct', productId, 'status=', r?.status);
+
         } catch (e) {
           console.error('removeFavoriteByProduct failed', productId, e?.response?.status, e?.response?.data || e?.message || e);
           throw e;
@@ -78,7 +78,7 @@ export default function FavoriteToggle({ productId, size = "medium" }) {
       } else {
         try {
           const r = await addFavorite(productId);
-          console.log('addFavorite response', productId, 'status=', r?.status);
+
         } catch (e) {
           console.error('addFavorite failed for', productId, e?.response?.status, e?.response?.data || e?.message || e);
           if (e?.response?.status === 401) {

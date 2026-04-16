@@ -53,10 +53,3 @@ export const sendMessage = async (chatId, payload) => {
     throw error;
   }
 };
-
-export const uploadChatMessageFile = async (chatId, file) => {
-  const formData = new FormData();
-  formData.append('file', file); // Backend expects field name 'file'
-  return axiosInstance.post(`/chats/${chatId}/messages/upload`, formData);
-};
-

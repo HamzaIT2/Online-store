@@ -26,7 +26,7 @@ export default function Cart() {
         // Clear cart for guest users
         localStorage.removeItem('cart');
         setItems([]);
-        console.log('Cart cleared for guest user');
+
       }
     } catch (_) {
       setItems([]);
@@ -43,7 +43,7 @@ export default function Cart() {
           // Token or user was removed (logout)
           setItems([]);
           localStorage.removeItem('cart');
-          console.log('Cart cleared on logout');
+
         }
       }
     };

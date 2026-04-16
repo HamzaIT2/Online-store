@@ -386,13 +386,17 @@ export default function ProductDetails() {
                 onClick={async () => {
                   try {
                     const sellerId = getSellerUserId(product);
-                    if (!sellerId) { navigate('/chats'); return; }
+                    if (!sellerId) { navigate('/chat'); return; }
                     const res = await createOrGetChat({ sellerId, productId: product?.productId || product?.id });
                     const payload = res?.data ?? res;
                     const chat = payload?.data ?? payload ?? {};
                     const chatId = chat?.id || chat?.chatId;
-                    if (chatId) navigate(`/chats?chatId=${chatId}`); else navigate('/chats');
-                  } catch (_) { navigate('/chats'); }
+                    if (chatId) {
+                      navigate(`/chat?chatId=${chatId}`, { state: { chat } });
+                    } else {
+                      navigate('/chat');
+                    }
+                  } catch (_) { navigate('/chat'); }
                 }}
                 sx={{
                   bgcolor: darkMode ? '#34495e' : '#FFD700',
@@ -536,8 +540,8 @@ export default function ProductDetails() {
         onPaymentComplete={(success) => {
           setPaymentDialogOpen(false);
           if (success) {
-            // Handle successful payment
-            navigate('/profile'); // or any other page
+            // Handle successful payment - navigate to My Purchases
+            navigate('/my-purchases');
           }
         }}
       />

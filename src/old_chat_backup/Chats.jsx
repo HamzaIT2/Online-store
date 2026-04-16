@@ -393,7 +393,7 @@
 //-------------------------------------------------------------==============================================================
 
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Divider, TextField, IconButton, Paper, CircularProgress, Typography, useTheme } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
@@ -401,7 +401,9 @@ import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import ChatList from "../components/ChatList";
-import ChatThread from "../components/ChatThread";
+import OptimizedChatThread from "../components/OptimizedChatThread";
+import ConnectionStatus from "../components/ConnectionStatus";
+import { useChat } from "../hooks/useChat";
 import { listChats, getChatMessages, sendMessage, findExistingChat, createOrGetChat } from "../api/messagesAPI";
 import axiosInstance from "../api/axiosInstance";
 
@@ -412,75 +414,71 @@ export default function Chats() {
     const [chats, setChats] = useState([]);
     const [loadingChats, setLoadingChats] = useState(true);
     const [errorChats, setErrorChats] = useState("");
-
     const [currentChat, setCurrentChat] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [loadingMsgs, setLoadingMsgs] = useState(false);
-    const [errorMsgs, setErrorMsgs] = useState("");
     const [currentUserId, setCurrentUserId] = useState(null);
-
+    const [isProfileLoading, setIsProfileLoading] = useState(true);
     const [draft, setDraft] = useState("");
     const [uploading, setUploading] = useState(false);
-    const unreadCountMap = useMemo(() => ({}), []);
+    const [userCache, setUserCache] = useState({});
 
-    // Start or continue conversation
-    const startConversation = async (sellerId, productId) => {
-        try {
-            const userId = localStorage.getItem('userId');
-
-            if (!currentUserId) {
-                console.error('No current user found');
-                return;
-            }
-
-            // First try to find existing chat
-            const existingChatResponse = await findExistingChat(currentUserId, sellerId, productId);
-
-            if (existingChatResponse.data && existingChatResponse.data.conversationId) {
-                // Open existing conversation
-                setCurrentChat(existingChatResponse.data);
-                loadMessages(existingChatResponse.data.conversationId);
-            } else {
-                // Create new conversation
-                const newChatResponse = await createOrGetChat({ sellerId, productId });
-                setCurrentChat(newChatResponse.data);
-                loadMessages(newChatResponse.data.conversationId);
-            }
-        } catch (error) {
-            console.error('Error starting conversation:', error);
-            setErrorChats('فشل في بدء المحادثة');
-        }
-    };
-
-    // Load messages for a specific chat
-    const loadMessages = async (chatId) => {
-        setLoadingMsgs(true);
-        setErrorMsgs("");
-        try {
-            const res = await getChatMessages(chatId);
-            const data = res?.data ?? res;
-            const rows = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
-            setMessages(rows);
-        } catch (e) {
-            setErrorMsgs("Failed to load messages");
-        } finally {
-            setLoadingMsgs(false);
-        }
-    };
-
-    // Load current user id for alignment/context
+    // ✅ Load current user profile from backend
     useEffect(() => {
         let mounted = true;
         const loadMe = async () => {
+            setIsProfileLoading(true);
             try {
+
                 const res = await axiosInstance.get('/users/profile');
-                const me = res?.data || {};
-                if (mounted) setCurrentUserId(me.id || me.userId || me.uid || null);
-            } catch (_) { if (mounted) setCurrentUserId(null); }
+
+
+                const me = res?.data ? res.data : (res || {});
+
+
+                const extractedId = me.id || me.userId || me.uid || me._id || null;
+
+
+                if (mounted) {
+                    setCurrentUserId(extractedId);
+
+                }
+            } catch (error) {
+                console.error('🔥 Failed to load user profile:', error);
+                if (mounted) {
+                    setCurrentUserId(null);
+
+                }
+            } finally {
+                if (mounted) {
+                    setIsProfileLoading(false);
+
+                }
+            }
         };
         loadMe();
         return () => { mounted = false; };
     }, []);
+
+    // ✅ Calculate stringified currentUserId (must be after hooks but before early returns)
+    const currentUserIdStr = currentUserId ? String(currentUserId) : null;
+
+    // ✅ Use the optimized chat hook (must be before early returns)
+    const {
+        messages,
+        loading: loadingMsgs,
+        error: errorMsgs,
+        isConnected,
+        connectionError,
+        socket,
+        typingUsers,
+        sendMessage: sendChatMessage,
+        broadcastMessage,  // ✅ Add broadcastMessage for API-first pattern
+        retryMessage,
+        startTyping,
+        stopTyping,
+        scrollToBottom,
+        messagesEndRef,
+        setMessages  // ✅ Add setMessages to directly update messages state
+    } = useChat(currentChat?.id || currentChat?.conversationId, currentUserIdStr);
 
     useEffect(() => {
         const load = async () => {
@@ -490,13 +488,10 @@ export default function Chats() {
                 const data = res?.data ?? res;
                 const rows = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
                 setChats(rows);
-                // Try select by chatId from query string first
-                if (rows.length) {
-                    const params = new URLSearchParams(location.search);
-                    const qId = params.get('chatId');
-                    const target = qId ? rows.find(r => String(r.id) === String(qId) || String(r.chatId) === String(qId)) : null;
-                    setCurrentChat(target || (!currentChat ? rows[0] : currentChat));
-                }
+                const params = new URLSearchParams(location.search);
+                const qId = params.get('chatId');
+                const target = qId ? rows.find(r => String(r.id) === String(qId) || String(r.chatId) === String(qId)) : null;
+                setCurrentChat(target || (!currentChat ? rows[0] : currentChat));
             } catch (e) {
                 setErrorChats('Failed to load chats');
             } finally {
@@ -506,43 +501,113 @@ export default function Chats() {
         load();
     }, [location.search]);
 
-    useEffect(() => {
-        const loadMsgs = async () => {
-            if (!currentChat?.id && !currentChat?.conversationId) return;
-            const chatId = currentChat?.id || currentChat?.conversationId;
-            await loadMessages(chatId);
-        };
-        loadMsgs();
-    }, [currentChat]);
+    // ✅ NOTE: Socket listeners are now handled by useChat.js hook
+    // No duplicate listeners needed here - useChat.js manages all socket events
 
-    const handleSend = async () => {
-        const text = draft.trim();
-        if (!text || !currentChat?.id) return;
-
-        console.log('Sending message:', {
-            chatId: currentChat.id,
-            text: text,
-            currentUserId: currentUserId
-        });
-
-        setDraft("");
+    const startConversation = useCallback(async (sellerId, productId) => {
         try {
-            const res = await sendMessage(currentChat.id, { type: 'text', text });
-            console.log('Message sent successfully:', res);
-            const saved = (res?.data?.data ?? res?.data ?? res) || null;
-            if (saved && typeof saved === 'object') {
-                console.log('Message saved to state:', saved);
-                setMessages((m) => [...m, saved]);
+            if (!currentUserIdStr) {
+                console.error('No current user found');
+                return;
+            }
+
+            const existingChatResponse = await findExistingChat(currentUserIdStr, sellerId, productId);
+
+            if (existingChatResponse.data && existingChatResponse.data.conversationId) {
+                setCurrentChat(existingChatResponse.data);
+            } else {
+                const newChatResponse = await createOrGetChat({ sellerId, productId });
+                setCurrentChat(newChatResponse.data);
             }
         } catch (error) {
+            console.error('Error starting conversation:', error);
+            setErrorChats('فشل في بدء المحادثة');
+        }
+    }, [currentUserIdStr]);
+
+    const handleSend = useCallback(async (e) => {
+        if (e) {
+            e.preventDefault();
+        }
+
+        const text = draft.trim();
+        if (!text || !currentChat?.id) {
+
+            return;
+        }
+
+        if (!currentUserIdStr) {
+            console.error('🔥 Send blocked - currentUserIdStr is null or undefined');
+
+            setErrorChats('يرجى تسجيل الدخول لإرسال الرسائل');
+            return;
+        }
+
+
+
+        setDraft("");
+        stopTyping();
+
+        try {
+            const response = await axiosInstance.post(`/chats/${currentChat.id}/messages`, {
+                text: text,
+                type: 'text'
+            });
+
+            const newMessage = {
+                id: response.data?.id || response.data?.data?.id || `msg-${Date.now()}`,
+                text: text,
+                content: text,
+                senderId: currentUserIdStr,
+                createdAt: new Date().toISOString(),
+                status: 'sent',
+                type: 'text',
+                chatId: currentChat.id
+            };
+
+            setMessages(prev => {
+                const updated = [...prev, newMessage];
+                return updated.sort((a, b) =>
+                    new Date(a.createdAt || a.timestamp) - new Date(b.createdAt || b.timestamp)
+                );
+            });
+
+            if (broadcastMessage) {
+                broadcastMessage(newMessage);
+            }
+
+
+
+        } catch (error) {
             console.error('Failed to send message:', error);
-            console.error('Error response:', error.response?.data);
-            // revert draft on failure
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
             setDraft(text);
         }
-    };
+    }, [draft, currentChat?.id, currentUserIdStr, broadcastMessage, stopTyping]);
 
-    const handleSendLocation = async () => {
+    const handleInputChange = useCallback((e) => {
+        const value = e.target.value;
+        setDraft(value);
+
+        if (value.trim()) {
+            startTyping();
+        } else {
+            stopTyping();
+        }
+    }, [startTyping, stopTyping]);
+
+    const handleKeyDown = useCallback((e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    }, [handleSend]);
+
+    const handleSendLocation = useCallback(async () => {
         if (!currentChat?.id) return;
         try {
             if (!('geolocation' in navigator)) return;
@@ -550,12 +615,15 @@ export default function Chats() {
                 const { latitude, longitude } = pos.coords;
                 const url = `https://maps.google.com/?q=${latitude},${longitude}`;
                 try {
-                    const res = await sendMessage(currentChat.id, { type: 'text', text: url });
-                    const saved = (res?.data?.data ?? res?.data ?? res) || null; if (saved && typeof saved === 'object') setMessages((m) => [...m, saved]);
-                } catch (_) { }
+                    await sendChatMessage(url, 'text');
+                } catch (_) {
+                    console.error('Failed to send location');
+                }
             });
-        } catch (_) { }
-    };
+        } catch (_) {
+            console.error('Geolocation not available');
+        }
+    }, [currentChat?.id, sendChatMessage]);
 
     const tryUpload = async (file) => {
         if (!currentChat?.id) throw new Error('no_chat');
@@ -573,24 +641,41 @@ export default function Chats() {
         return path;
     };
 
-    const handlePickFile = async (e, asImage) => {
+    const handlePickFile = useCallback(async (e, asImage) => {
         const f = e.target.files && e.target.files[0];
         if (!f || !currentChat?.id) return;
         setUploading(true);
         try {
             const url = await tryUpload(f);
-            const payload = asImage ? { type: 'image', imageUrl: url } : { type: 'text', text: url };
-            const res = await sendMessage(currentChat.id, payload);
-            const saved = (res?.data?.data ?? res?.data ?? res) || null;
-            if (saved && typeof saved === 'object') setMessages((m) => [...m, saved]);
-        } catch (_) {
-            // noop for now
+            await sendChatMessage(url, asImage ? 'image' : 'text');
+        } catch (error) {
+            console.error('Failed to upload file:', error);
         } finally {
             setUploading(false);
             // reset input value so same file can be selected again
             e.target.value = '';
         }
-    };
+    }, [currentChat?.id, sendChatMessage]);
+
+    // ✅ EARLY RETURNS (AFTER all hooks are declared)
+    // Guard against profile loading - wait for currentUserId
+    if (isProfileLoading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" p={5} minHeight="100vh">
+                <CircularProgress />
+                <Typography variant="h6" sx={{ ml: 2 }}>Loading profile...</Typography>
+            </Box>
+        );
+    }
+
+    // Guard against missing user ID after profile loads
+    if (!isProfileLoading && !currentUserId) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" p={5} minHeight="100vh">
+                <Typography variant="h6">Please log in to access chat.</Typography>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{
@@ -646,7 +731,7 @@ export default function Chats() {
                         error={errorChats}
                         selectedId={currentChat?.id}
                         onSelect={setCurrentChat}
-                        unreadCountMap={unreadCountMap}
+                        unreadCountMap={{}} // TODO: Implement unread counts
                         currentUserId={currentUserId}
                     />
                 </Box>
@@ -695,13 +780,26 @@ export default function Chats() {
                 <Box sx={{
                     flex: 1,
                     overflow: 'hidden',
-                    display: currentChat ? 'flex' : 'none'
+                    display: currentChat ? 'flex' : 'none',
+                    position: 'relative'
                 }}>
-                    <ChatThread
+                    <OptimizedChatThread
                         messages={messages}
                         loading={loadingMsgs}
                         error={errorMsgs}
                         currentUserId={currentUserId}
+                        userCache={userCache}
+                        typingUsers={typingUsers}
+                        onRetryMessage={retryMessage}
+                        messagesEndRef={messagesEndRef}
+                        theme={theme}
+                    />
+
+                    {/* Connection Status Indicator */}
+                    <ConnectionStatus
+                        isConnected={isConnected}
+                        connectionError={connectionError}
+                        position="top-right"
                     />
                 </Box>
 
@@ -752,108 +850,159 @@ export default function Chats() {
                                     boxShadow: `0 0 0 2px ${theme.palette.primary.main}20`,
                                 }
                             }}>
-                                <input
-                                    id="chat-image-input"
-                                    type="file"
-                                    accept="image/*"
-                                    style={{ display: 'none' }}
-                                    onChange={(e) => handlePickFile(e, true)}
-                                />
-                                <input
-                                    id="chat-file-input"
-                                    type="file"
-                                    style={{ display: 'none' }}
-                                    onChange={(e) => handlePickFile(e, false)}
-                                />
-
-                                <IconButton
-                                    title="أرسل صورة"
-                                    color="primary"
-                                    onClick={() => document.getElementById('chat-image-input')?.click()}
-                                    disabled={uploading}
-                                    sx={{
-                                        transition: 'all 0.2s ease-in-out',
-                                        '&:hover': {
-                                            backgroundColor: theme.palette.primary.main + '15',
-                                            transform: 'scale(1.1)',
-                                        }
-                                    }}
+                                <form
+                                    onSubmit={handleSend}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1 }}
                                 >
-                                    <ImageIcon />
-                                </IconButton>
+                                    <input
+                                        id="chat-image-input"
+                                        type="file"
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => handlePickFile(e, true)}
+                                    />
+                                    <input
+                                        id="chat-file-input"
+                                        type="file"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => handlePickFile(e, false)}
+                                    />
 
-                                <IconButton
-                                    title="أرفق ملف"
-                                    color="primary"
-                                    onClick={() => document.getElementById('chat-file-input')?.click()}
-                                    disabled={uploading}
-                                    sx={{
-                                        transition: 'all 0.2s ease-in-out',
-                                        '&:hover': {
-                                            backgroundColor: theme.palette.primary.main + '15',
-                                            transform: 'scale(1.1)',
-                                        }
-                                    }}
-                                >
-                                    <AttachFileIcon />
-                                </IconButton>
-
-                                <IconButton
-                                    title="أرسل موقعي"
-                                    color="primary"
-                                    onClick={handleSendLocation}
-                                    sx={{
-                                        transition: 'all 0.2s ease-in-out',
-                                        '&:hover': {
-                                            backgroundColor: theme.palette.primary.main + '15',
-                                            transform: 'scale(1.1)',
-                                        }
-                                    }}
-                                >
-                                    <MyLocationIcon />
-                                </IconButton>
-
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    placeholder="اكتب رسالتك هنا..."
-                                    value={draft}
-                                    onChange={(e) => setDraft(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                                    variant="standard"
-                                    InputProps={{
-                                        disableUnderline: true,
-                                        sx: {
-                                            fontSize: '0.95rem',
-                                            '&::placeholder': {
-                                                color: theme.palette.text.secondary,
-                                                opacity: 0.7,
+                                    <IconButton
+                                        title="أرسل صورة"
+                                        color="primary"
+                                        onClick={() => document.getElementById('chat-image-input')?.click()}
+                                        disabled={uploading}
+                                        type="button"
+                                        sx={{
+                                            transition: 'all 0.2s ease-in-out',
+                                            '&:hover': {
+                                                backgroundColor: theme.palette.primary.main + '15',
+                                                transform: 'scale(1.1)',
                                             }
-                                        }
-                                    }}
-                                    sx={{ flex: 1 }}
-                                />
+                                        }}
+                                    >
+                                        <ImageIcon />
+                                    </IconButton>
 
-                                <IconButton
-                                    color="primary"
-                                    onClick={handleSend}
-                                    disabled={uploading || !draft.trim()}
-                                    sx={{
-                                        bgcolor: draft.trim() ? theme.palette.primary.main : 'transparent',
-                                        color: draft.trim() ? '#fff' : theme.palette.primary.main,
-                                        transition: 'all 0.2s ease-in-out',
-                                        '&:hover': {
-                                            bgcolor: draft.trim() ? theme.palette.primary.dark : theme.palette.primary.main + '15',
-                                            transform: draft.trim() ? 'scale(1.1)' : 'scale(1.05)',
-                                        },
-                                        '&:disabled': {
-                                            bgcolor: 'transparent',
-                                            color: theme.palette.action.disabled,
-                                        }
-                                    }}
-                                >
-                                    <SendIcon />
-                                </IconButton>
+                                    <IconButton
+                                        title="أرفق ملف"
+                                        color="primary"
+                                        onClick={() => document.getElementById('chat-file-input')?.click()}
+                                        disabled={uploading}
+                                        type="button"
+                                        sx={{
+                                            transition: 'all 0.2s ease-in-out',
+                                            '&:hover': {
+                                                backgroundColor: theme.palette.primary.main + '15',
+                                                transform: 'scale(1.1)',
+                                            }
+                                        }}
+                                    >
+                                        <AttachFileIcon />
+                                    </IconButton>
+
+                                    <IconButton
+                                        title="أرسل موقعي"
+                                        color="primary"
+                                        onClick={handleSendLocation}
+                                        type="button"
+                                        sx={{
+                                            transition: 'all 0.2s ease-in-out',
+                                            '&:hover': {
+                                                backgroundColor: theme.palette.primary.main + '15',
+                                                transform: 'scale(1.1)',
+                                            }
+                                        }}
+                                    >
+                                        <MyLocationIcon />
+                                    </IconButton>
+
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="اكتب رسالتك هنا..."
+                                        value={draft}
+                                        onChange={handleInputChange}
+                                        onKeyDown={handleKeyDown}
+                                        variant="standard"
+                                        InputProps={{
+                                            disableUnderline: true,
+                                            sx: {
+                                                fontSize: '0.95rem',
+                                                '&::placeholder': {
+                                                    color: theme.palette.text.secondary,
+                                                    opacity: 0.7,
+                                                }
+                                            }
+                                        }}
+                                        sx={{ flex: 1 }}
+                                    />
+
+                                    <IconButton
+                                        color="primary"
+                                        type="submit"
+                                        disabled={uploading || !draft.trim()}
+                                        sx={{
+                                            bgcolor: draft.trim() ? theme.palette.primary.main : 'transparent',
+                                            color: draft.trim() ? '#fff' : theme.palette.primary.main,
+                                            transition: 'all 0.2s ease-in-out',
+                                            '&:hover': {
+                                                bgcolor: draft.trim() ? theme.palette.primary.dark : theme.palette.primary.main + '15',
+                                                transform: draft.trim() ? 'scale(1.1)' : 'scale(1.05)',
+                                            },
+                                            '&:disabled': {
+                                                bgcolor: 'transparent',
+                                                color: theme.palette.action.disabled
+                                            }
+                                        }}
+                                    >
+                                        <SendIcon />
+                                    </IconButton>
+                                </form>
+
+                                {/* Debug button for testing */}
+                                {process.env.NODE_ENV === 'development' && (
+                                    <>
+                                        <IconButton
+                                            color="secondary"
+                                            onClick={() => {
+
+                                                console.log('Current state:', {
+                                                    draft,
+                                                    currentChatId: currentChat?.id,
+                                                    uploading,
+                                                    isConnected
+                                                });
+                                                handleSend();
+                                            }}
+                                            size="small"
+                                            sx={{ ml: 1 }}
+                                        >
+                                            <Typography variant="caption">DEBUG</Typography>
+                                        </IconButton>
+
+                                        <IconButton
+                                            color="error"
+                                            onClick={async () => {
+
+                                                try {
+                                                    const response = await axiosInstance.post(`/chats/${currentChat?.id}/messages`, {
+                                                        text: 'Test message from RAW API',  // ✅ Use 'text' field
+                                                        type: 'text'
+                                                    });
+
+                                                } catch (error) {
+                                                    console.error('RAW API ERROR:', error);
+                                                }
+                                            }}
+                                            size="small"
+                                            sx={{ ml: 1 }}
+                                        >
+                                            <Typography variant="caption">RAW</Typography>
+                                        </IconButton>
+                                    </>
+                                )}
                             </Box>
 
                             {uploading && (

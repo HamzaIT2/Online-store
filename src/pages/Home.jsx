@@ -22,6 +22,7 @@ const getCurrentLang = () => {
 
 export default function Home() {
   const navigate = useNavigate();
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [filters, setFilters] = useState({
     category: "",
     province: "",
@@ -91,7 +92,7 @@ export default function Home() {
       setHeroSlides(formattedSlides);
 
     } catch (error) {
-      console.error("❌ Error fetching hero slides:", error);
+      // Handle error silently or show user-friendly message
     }
   };
 
@@ -110,7 +111,6 @@ export default function Home() {
       setProducts(res?.data || []);
 
     } catch (err) {
-      console.error('Error loading products:', err);
       setError(t('error_loading_product'));
     } finally {
       setLoading(false);
@@ -136,10 +136,12 @@ export default function Home() {
       const newFilters = { ...prevFilters };
 
       // Category
-      if (categoryId) {
+      if (categoryId && categoryId !== 'undefined' && categoryId !== 'null') {
         newFilters.category = categoryId;
-      } else if (prevFilters.category !== '') {
+        setSelectedCategoryId(categoryId);
+      } else {
         newFilters.category = '';
+        setSelectedCategoryId(null);
       }
 
       // Province - use provinceId to match FilterDrawer
@@ -176,7 +178,7 @@ export default function Home() {
 
   useEffect(() => {
     loadProducts();
-  }, [filters, searchTerm]);
+  }, [selectedCategoryId, filters, searchTerm]);
 
   useEffect(() => {
     const handleScroll = () => {
