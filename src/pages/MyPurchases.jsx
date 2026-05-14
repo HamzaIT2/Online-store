@@ -208,7 +208,7 @@ export default function MyPurchases() {
                       color: 'primary.main'
                     }}
                   >
-                    ${order.totalPrice ? order.totalPrice.toFixed(2) : '0.00'}
+                    {order.totalPrice ? Number(order.totalPrice).toLocaleString() : '0'} {t('currency_iqd') || 'IQD'}
                   </Typography>
 
                   {/* Status Badge */}
