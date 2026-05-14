@@ -24,12 +24,12 @@ import {
 } from '@mui/icons-material';
 import ZainCashProvider from '../services/zainCashProvider';
 
-const PaymentModal = ({ 
-  open, 
-  onClose, 
-  orderId, 
-  amount, 
-  onPaymentComplete 
+const PaymentModal = ({
+  open,
+  onClose,
+  orderId,
+  amount,
+  onPaymentComplete
 }) => {
   const [step, setStep] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -79,7 +79,7 @@ const PaymentModal = ({
 
       // Redirect to Zain Cash
       await zainCashProvider.redirectToPayment(intent, phoneNumber);
-      
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -119,7 +119,7 @@ const PaymentModal = ({
         borderRadius: 2,
         boxShadow: 24
       }}>
-        
+
         {/* Header */}
         <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h6" component="h2">
@@ -164,9 +164,9 @@ const PaymentModal = ({
               <Typography variant="body1" sx={{ mb: 3 }}>
                 اختر طريقة الدفع المناسبة لك
               </Typography>
-              
-              <Card 
-                sx={{ 
+
+              <Card
+                sx={{
                   cursor: 'pointer',
                   border: 2,
                   borderColor: 'primary.main',
@@ -175,9 +175,9 @@ const PaymentModal = ({
                 onClick={handleNext}
               >
                 <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ 
-                    width: 50, 
-                    height: 50, 
+                  <Box sx={{
+                    width: 50,
+                    height: 50,
                     borderRadius: '50%',
                     bgcolor: '#FF6B35',
                     display: 'flex',
@@ -204,7 +204,7 @@ const PaymentModal = ({
               <Typography variant="body1" sx={{ mb: 3 }}>
                 أدخل رقم هاتف زين كاش الخاص بك
               </Typography>
-              
+
               <TextField
                 fullWidth
                 label="رقم الهاتف"
@@ -238,7 +238,7 @@ const PaymentModal = ({
               <Typography variant="body2" color="text.secondary">
                 رقم المعاملة: {paymentIntent.transactionId}
               </Typography>
-              
+
               <Alert severity="info" sx={{ mt: 3 }}>
                 <Typography variant="body2">
                   إذا لم يتم توجيهك تلقائياً، يرجى فتح تطبيق زين كاش يدوياً
@@ -255,9 +255,9 @@ const PaymentModal = ({
               السابق
             </Button>
           )}
-          
-          <Button 
-            variant="outlined" 
+
+          <Button
+            variant="outlined"
             onClick={handleClose}
             fullWidth={step === 0}
           >
@@ -265,8 +265,8 @@ const PaymentModal = ({
           </Button>
 
           {step < 2 && (
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleNext}
               disabled={loading}
               fullWidth
