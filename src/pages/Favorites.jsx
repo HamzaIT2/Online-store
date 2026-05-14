@@ -77,13 +77,18 @@ export default function Favorites() {
     setConfirmOpen(false);
     setDeleting(true);
     try {
-      const id = toDelete.id || toDelete._id || toDelete.productId;
-      await axiosInstance.delete(`/products/${id}`);
-      // refresh my ads
-      setMyAds((prev) => prev.filter(p => (p.id || p._id) !== id));
-      window.dispatchEvent(new CustomEvent('product:deleted', { detail: { id } }));
+      const productId = toDelete.productId || toDelete.id || toDelete._id;
+      // Use the correct favorites API endpoint instead of deleting the product
+      await axiosInstance.delete(`/favorites/product/${productId}`);
+      // Refresh favorites list
+      setItems((prev) => prev.filter(item =>
+        (item.productId || item.id || item._id) !== productId
+      ));
+      // Dispatch event to update favorites count in other components
+      window.dispatchEvent(new CustomEvent('favorites:updated', { detail: { productId } }));
     } catch (e) {
-      console.error('delete error', e);
+      console.error('Remove from favorites error:', e);
+      // Optionally show user-friendly error message here
     } finally {
       setDeleting(false);
       setToDelete(null);
