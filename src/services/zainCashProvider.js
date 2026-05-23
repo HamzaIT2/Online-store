@@ -2,27 +2,22 @@
 class ZainCashProvider {
   constructor() {
     // Use fallback values for development
-    this.apiKey = import.meta.env.VITE_ZAIN_CASH_API_KEY || 'demo_api_key';
-    this.merchantId = import.meta.env.VITE_ZAIN_CASH_MERCHANT_ID || 'demo_merchant_id';
-    this.secret = import.meta.env.VITE_ZAIN_CASH_SECRET || 'demo_secret';
-    this.baseUrl = 'https://api.zaincash.iq';
+    this.apiKey = import.meta.env.VITE_ZAIN_CASH_API_KEY || "demo_api_key";
+    this.merchantId =
+      import.meta.env.VITE_ZAIN_CASH_MERCHANT_ID || "demo_merchant_id";
+    this.secret = import.meta.env.VITE_ZAIN_CASH_SECRET || "demo_secret";
+    this.baseUrl = "https://api.zaincash.iq";
   }
 
   async createPayment({ amount, orderId, phoneNumber, description }) {
     try {
       // For demo purposes, simulate payment creation
-      console.log('Creating Zain Cash payment:', {
-        amount,
-        orderId,
-        phoneNumber,
-        description
-      });
 
       // Simulate API response for demo
       const mockResponse = {
         id: `demo_${Date.now()}`,
         paymentUrl: `zaincash://payment?transaction=demo_${Date.now()}&msisdn=${phoneNumber}`,
-        expiresAt: new Date(Date.now() + 3600000).toISOString() // 1 hour from now
+        expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
       };
 
       // In production, this would be an actual API call:
@@ -64,11 +59,11 @@ class ZainCashProvider {
       return {
         transactionId: mockResponse.id,
         paymentUrl: mockResponse.paymentUrl,
-        expiresAt: mockResponse.expiresAt
+        expiresAt: mockResponse.expiresAt,
       };
     } catch (error) {
-      console.error('Zain Cash payment error:', error);
-      throw new Error('فشل في الاتصال بـ Zain Cash');
+      console.error("Zain Cash payment error:", error);
+      throw new Error("فشل في الاتصال بـ Zain Cash");
     }
   }
 
@@ -80,15 +75,14 @@ class ZainCashProvider {
   async verifyPayment(transactionId) {
     try {
       // For demo purposes, simulate successful payment verification
-      
 
       // Simulate API response for demo
       const mockVerification = {
         success: true,
-        status: 'SUCCESS',
+        status: "SUCCESS",
         amount: 1000, // Mock amount
         transactionId: transactionId,
-        verifiedAt: new Date()
+        verifiedAt: new Date(),
       };
 
       // In production, this would be an actual API call:
@@ -113,7 +107,7 @@ class ZainCashProvider {
 
       return mockVerification;
     } catch (error) {
-      console.error('Zain Cash verification error:', error);
+      console.error("Zain Cash verification error:", error);
       return { success: false, error: error.message };
     }
   }
@@ -125,21 +119,20 @@ class ZainCashProvider {
         resolve(false);
       }, 2000);
 
-      window.addEventListener('blur', () => {
+      window.addEventListener("blur", () => {
         clearTimeout(timeout);
         resolve(true);
       });
 
       // Try to open the deep link
-      window.location.href = 'zaincash://';
+      window.location.href = "zaincash://";
     });
   }
 
   // Redirect to payment
   async redirectToPayment(paymentIntent, phoneNumber) {
     // For demo purposes, just show an alert
-    
-    
+
     // In production, this would check if app is installed and redirect accordingly
     /*
     const isAppInstalled = await this.isZainCashAppInstalled();
@@ -159,8 +152,8 @@ class ZainCashProvider {
     */
 
     // For demo, show a message
-    alert('في بيئة التطوير: سيتم توجيهك إلى تطبيق Zain Cash لإتمام الدفع');
-    
+    alert("في بيئة التطوير: سيتم توجيهك إلى تطبيق Zain Cash لإتمام الدفع");
+
     // Simulate successful payment for demo
     setTimeout(() => {
       window.location.href = `/payment/zain-cash/success?token=${paymentIntent.transactionId}&orderId=demo_order`;
