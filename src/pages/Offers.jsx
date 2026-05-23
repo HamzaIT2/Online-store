@@ -233,23 +233,12 @@ export default function Offers() {
           const currentPrice = Number(p.price);
           const oldPrice = Number(p.oldPrice);
 
-          console.log("البيانات الخام:", {
-            price: p.price,
-            oldPrice: p.oldPrice,
-            offerExpiresAt: p.offerExpiresAt
-          });
-
-          // الشرط الأول: هل يوجد سعر قديم؟
           const hasDiscount = p.oldPrice && oldPrice > currentPrice;
-          `);
-
           // الشرط الثاني: هل الوقت لم ينتهِ بعد؟
           // (إذا كان التاريخ موجوداً نتحقق منه، وإذا لم يكن موجوداً نعتبر العرض دائم)
           const isNotExpired = p.offerExpiresAt
             ? new Date(p.offerExpiresAt) > new Date()
             : true;
-          `
-
         const finalResult = hasDiscount && isNotExpired;
 
 
