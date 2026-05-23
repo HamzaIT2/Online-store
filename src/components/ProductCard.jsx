@@ -258,6 +258,7 @@ export default function ProductCard({ product }) {
 
         <CardMedia
           component="img"
+          loading="lazy"
           sx={{
             width: '100%',
             height: { xs: 200, sm: 250, md: 300 }, // Responsive height
