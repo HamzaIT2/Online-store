@@ -447,6 +447,13 @@ const dict = {
     terms_logout: "تسجيل خروج",
     terms_accept_continue: "موافق ومتابعة",
 
+    // Error Boundary
+    error_boundary_title: "عذراً، حدث خطأ غير متوقع",
+    error_boundary_message:
+      "واجهنا مشكلة في تحميل الصفحة. يرجى المحاولة مرة أخرى.",
+    error_boundary_reload: "إعادة تحميل الصفحة",
+    error_boundary_help: "إذا استمرت المشكلة، يرجى التواصل مع الدعم الفني",
+
     //--------------------------------------------------------------شروط الاحكام---------------------------------------------------------------
   },
   en: {
@@ -885,6 +892,14 @@ const dict = {
       "Welcome to our site! Before you can use the site, you must agree to the Terms and Conditions and Privacy Policy.",
     terms_logout: "Logout",
     terms_accept_continue: "Accept and Continue",
+
+    // Error Boundary
+    error_boundary_title: "Sorry, an unexpected error occurred",
+    error_boundary_message:
+      "We encountered a problem loading the page. Please try again.",
+    error_boundary_reload: "Reload Page",
+    error_boundary_help:
+      "If the problem persists, please contact technical support",
 
     //----------------------------------------------------------------------Terms-------------------------------------------------------------------------------
   },
