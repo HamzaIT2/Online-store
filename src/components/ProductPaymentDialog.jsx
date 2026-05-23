@@ -203,7 +203,6 @@ const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => 
             const response = await axiosInstance.post('/transactions', finalOrderData);
 
             if (response) {
-              console.log('Cash on Delivery order successfully saved to database');
               onPaymentComplete(true, {
                 paymentMethod: paymentMethod,
                 deliveryInfo: deliveryInfo,
@@ -262,7 +261,6 @@ const ProductPaymentDialog = ({ open, onClose, product, onPaymentComplete }) => 
         const response = await axiosInstance.post('/transactions', orderData);
 
         if (response) {
-          console.log('Order successfully saved to database after Zain Cash payment');
           setCurrentStep(3); // Go to success step
           setError('');
         } else {
