@@ -210,6 +210,7 @@ export default function ProductDetails() {
             >
               <CardMedia
                 component="img"
+                loading="lazy"
                 image={mainImage}
                 alt={product.title}
                 sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -550,3 +551,6 @@ export default function ProductDetails() {
     //</Box>
   );
 }
+
+
+
