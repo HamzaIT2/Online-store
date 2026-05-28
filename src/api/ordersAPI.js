@@ -1,11 +1,23 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
 export const getMyOrders = async () => {
   try {
-    const response = await axiosInstance.get('/orders/my-orders');
+    const response = await axiosInstance.get("/orders/my-orders");
     return response;
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error("Error fetching orders:", error);
+    throw error;
+  }
+};
+
+export const getCompletedTransactionsWithSeller = async (sellerId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/orders/my-orders?sellerId=${sellerId}&status=delivered`,
+    );
+    return response;
+  } catch (error) {
+    console.error("Error fetching completed transactions with seller:", error);
     throw error;
   }
 };
