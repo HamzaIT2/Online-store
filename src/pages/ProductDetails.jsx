@@ -18,7 +18,9 @@ import {
   IconButton,
   Stack,
   Divider,
-  Paper
+  Paper,
+  Snackbar,
+  Alert
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -28,6 +30,7 @@ import FavoriteToggle from "../components/FavoriteToggle";
 import { CartIcon } from "../components/CartIcon";
 import axiosInstance from "../api/axiosInstance";
 import { createOrGetChat } from "../api/messagesAPI";
+import { getCompletedTransactionsWithSeller } from "../api/ordersAPI";
 import { t } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
 import ProductPaymentDialog from "../components/ProductPaymentDialog";
@@ -53,8 +56,11 @@ export default function ProductDetails() {
   const [rateOpen, setRateOpen] = useState(false);
   const [pendingRating, setPendingRating] = useState(0);
   const [rateComment, setRateComment] = useState("");
-  const [rateTxnId, setRateTxnId] = useState("");
   const [rateError, setRateError] = useState("");
+  const [eligibleTransactions, setEligibleTransactions] = useState([]);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Payment Dialog State
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -64,6 +70,36 @@ export default function ProductDetails() {
     return (
       p?.seller?.userId || p?.seller?.id || p?.user?.userId || p?.user?.id || p?.sellerId || p?.userId || p?.ownerId
     );
+  };
+
+  const fetchEligibleTransactions = async (sellerId) => {
+    if (!sellerId) return;
+    setLoadingTransactions(true);
+    setRateError("");
+    try {
+      const transactions = await getCompletedTransactionsWithSeller(sellerId);
+      const transactionsArray = Array.isArray(transactions) ? transactions : (transactions?.data || []);
+      setEligibleTransactions(transactionsArray);
+
+      // Auto-select the latest completed transaction
+      if (transactionsArray.length > 0) {
+        // Sort by date descending and pick the first one
+        const sorted = [...transactionsArray].sort((a, b) => {
+          const dateA = new Date(a.orderDate || a.createdAt || 0);
+          const dateB = new Date(b.orderDate || b.createdAt || 0);
+          return dateB - dateA;
+        });
+        setSelectedTransaction(sorted[0]);
+      } else {
+        setSelectedTransaction(null);
+      }
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setEligibleTransactions([]);
+      setSelectedTransaction(null);
+    } finally {
+      setLoadingTransactions(false);
+    }
   };
 
   useEffect(() => {
@@ -301,7 +337,12 @@ export default function ProductDetails() {
               const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
               if (!token) { navigate('/login'); return; }
               setRateOpen(true);
+              const sellerId = getSellerUserId(product);
+              if (sellerId) {
+                fetchEligibleTransactions(sellerId);
+              }
             }}>
+              <Typography variant="caption" color="text.secondary" fontWeight="500">{t('seller_rating')}</Typography>
               <Rating
                 value={Number(summary.ratingAverage)}
                 precision={0.5}
@@ -459,10 +500,15 @@ export default function ProductDetails() {
         </Grid>
       </Paper>
 
-      {/* Rating Dialog (Hidden Logic - kept for functionality) */}
+      {/* Rating Dialog */}
       <Dialog
         open={rateOpen}
-        onClose={() => setRateOpen(false)}
+        onClose={() => {
+          setRateOpen(false);
+          setRateError("");
+          setPendingRating(0);
+          setRateComment("");
+        }}
         PaperProps={{
           sx: {
             bgcolor: darkMode ? '#1a2f4a' : '#fff',
@@ -472,57 +518,91 @@ export default function ProductDetails() {
       >
         <DialogTitle sx={{ color: darkMode ? '#fff' : '#000' }}>{t('rate_seller')}</DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
-          <Rating value={pendingRating} onChange={(_, v) => setPendingRating(Math.round(v || 0))} />
-          <TextField
-            fullWidth
-            margin="dense"
-            label={t('transaction_id')}
-            value={rateTxnId}
-            onChange={(e) => setRateTxnId(e.target.value)}
-            sx={{
-              '& .MuiInputBase-input': { color: darkMode ? '#fff' : '#000' },
-              '& .MuiOutlinedInput-root': {
-                borderColor: darkMode ? '#34495e' : '#ccc',
-                '& fieldset': { borderColor: darkMode ? '#34495e' : '#ccc' },
-                '&:hover fieldset': { borderColor: darkMode ? '#555' : '#aaa' }
-              },
-              '& .MuiInputBase-input::placeholder': { color: darkMode ? '#888' : '#999', opacity: 1 }
-            }}
-          />
-          <TextField
-            fullWidth
-            margin="dense"
-            label={t('comment_optional')}
-            multiline
-            rows={2}
-            value={rateComment}
-            onChange={(e) => setRateComment(e.target.value)}
-            sx={{
-              '& .MuiInputBase-input': { color: darkMode ? '#fff' : '#000' },
-              '& .MuiOutlinedInput-root': {
-                borderColor: darkMode ? '#34495e' : '#ccc',
-                '& fieldset': { borderColor: darkMode ? '#34495e' : '#ccc' },
-                '&:hover fieldset': { borderColor: darkMode ? '#555' : '#aaa' }
-              }
-            }}
-          />
-          {rateError && <Typography color="error" variant="caption">{rateError}</Typography>}
+          {loadingTransactions ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : !selectedTransaction ? (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+              {t('must_complete_purchase')}
+            </Typography>
+          ) : (
+            <>
+              <Rating value={pendingRating} onChange={(_, v) => setPendingRating(Math.round(v || 0))} />
+              <TextField
+                fullWidth
+                margin="dense"
+                label={t('comment_optional')}
+                multiline
+                rows={2}
+                value={rateComment}
+                onChange={(e) => setRateComment(e.target.value)}
+                sx={{
+                  '& .MuiInputBase-input': { color: darkMode ? '#fff' : '#000' },
+                  '& .MuiOutlinedInput-root': {
+                    borderColor: darkMode ? '#34495e' : '#ccc',
+                    '& fieldset': { borderColor: darkMode ? '#34495e' : '#ccc' },
+                    '&:hover fieldset': { borderColor: darkMode ? '#555' : '#aaa' }
+                  }
+                }}
+              />
+              {rateError && <Typography color="error" variant="caption" sx={{ mt: 1 }}>{rateError}</Typography>}
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRateOpen(false)} sx={{ color: darkMode ? '#aaa' : '#666' }}>{t('cancel')}</Button>
+          <Button onClick={() => {
+            setRateOpen(false);
+            setRateError("");
+            setPendingRating(0);
+            setRateComment("");
+          }} sx={{ color: darkMode ? '#aaa' : '#666' }}>{t('cancel')}</Button>
           <Button
             variant="contained"
+            disabled={!selectedTransaction || pendingRating === 0 || loadingTransactions}
             onClick={async () => {
-              /* Same rating logic as before */
               try {
                 const token = localStorage.getItem('token');
                 const sellerId = getSellerUserId(product);
-                if (!token || !sellerId) return;
+                if (!token || !sellerId || !selectedTransaction) return;
+
                 await axiosInstance.post('/reviews', {
-                  transactionId: Number(rateTxnId), reviewedUserId: Number(sellerId), rating: Number(pendingRating), comment: rateComment
+                  transactionId: selectedTransaction.id || selectedTransaction._id || selectedTransaction.orderId,
+                  reviewedUserId: Number(sellerId),
+                  rating: Number(pendingRating),
+                  comment: rateComment
                 }, { headers: { Authorization: `Bearer ${token}` } });
+
                 setRateOpen(false);
-              } catch (e) { setRateError(t('error')); }
+                setRateError("");
+                setPendingRating(0);
+                setRateComment("");
+
+                // Show success message
+                setSnackbar({ open: true, message: t('review_success'), severity: 'success' });
+
+                // Refresh seller rating summary
+                const sellerIdForRefresh = getSellerUserId(product);
+                if (sellerIdForRefresh) {
+                  axiosInstance.get(`/reviews/user/${sellerIdForRefresh}/summary`).then((res) => {
+                    const s = res?.data || {};
+                    setSummary({ ratingAverage: Number(s.ratingAverage || 0), ratingCount: Number(s.ratingCount || 0) });
+                  }).catch(() => {
+                    // Keep existing summary on error
+                  });
+                }
+              } catch (e) {
+                // Handle duplicate review error
+                const errorMessage = e?.response?.data?.message || e?.message || '';
+                if (errorMessage.includes('duplicate') || errorMessage.includes('already') || e?.response?.status === 409) {
+                  setRateError(t('already_reviewed_seller'));
+                } else {
+                  setRateError(e?.response?.data?.message || t('error_submitting_review'));
+                  if (import.meta.env.DEV) {
+                    console.error('Review submission error:', e);
+                  }
+                }
+              }
             }}
             sx={{
               bgcolor: darkMode ? '#34495e' : '#FFD700',
@@ -546,6 +626,23 @@ export default function ProductDetails() {
           }
         }}
       />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
     </Container>
     //</Box>
