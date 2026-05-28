@@ -312,6 +312,7 @@ export default function ProductCard({ product }) {
               <Typography variant="h6" color="primary" fontWeight="bold">
                 {product?.price?.toLocaleString()} {t('currency_iqd')}
               </Typography>
+              <Typography variant="caption" color="text.secondary">{t('seller_rating')}</Typography>
               <Rating value={Number(product?.ratingAverage ?? product?.avgRating ?? product?.rating ?? 0)} precision={0.5} readOnly size="small" />
               {Boolean(product?.ratingCount) && (
                 <Typography variant="caption" color="text.secondary">({product?.ratingCount})</Typography>
