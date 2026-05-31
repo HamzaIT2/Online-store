@@ -18,12 +18,12 @@ export default function Cart() {
       const data = JSON.parse(localStorage.getItem('cart') || '[]');
       setItems(Array.isArray(data) ? data : []);
 
-      // Check if user is logged in, if not clear cart
+
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
 
       if (!token && !user && data.length > 0) {
-        // Clear cart for guest users
+
         localStorage.removeItem('cart');
         setItems([]);
 
@@ -36,11 +36,11 @@ export default function Cart() {
   useEffect(() => {
     load();
 
-    // Listen for auth changes
+
     const handleStorageChange = (e) => {
       if (e.key === 'token' || e.key === 'user') {
         if (!e.newValue) {
-          // Token or user was removed (logout)
+
           setItems([]);
           localStorage.removeItem('cart');
 
@@ -55,12 +55,12 @@ export default function Cart() {
     };
   }, []);
 
-  // Calculate total amount
+
   const totalAmount = items.reduce((total, item) => {
     return total + (Number(item?.price) || 0);
   }, 0);
 
-  // Generate order ID
+
   const generateOrderId = () => {
     return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
@@ -77,9 +77,9 @@ export default function Cart() {
     setPaymentModalOpen(false);
 
     if (success) {
-      // Clear cart after successful payment
+
       clearAll();
-      // Navigate to success page
+
       navigate(`/payment/zain-cash/success?orderId=${orderId}`);
     }
   };
@@ -105,7 +105,7 @@ export default function Cart() {
       const next = current.filter((p) => String(p?.productId) !== String(productId));
       localStorage.setItem('cart', JSON.stringify(next));
       setItems(next);
-      // Trigger cart update event
+
       window.dispatchEvent(new Event('cart:updated'));
     } catch (_) { }
   };
@@ -113,7 +113,7 @@ export default function Cart() {
   const clearAll = () => {
     localStorage.removeItem('cart');
     setItems([]);
-    // Trigger cart update event
+
     window.dispatchEvent(new Event('cart:updated'));
   };
 
@@ -130,17 +130,17 @@ export default function Cart() {
         <EmptyState
           type="cart"
           title={t('cart_empty') || 'سلتك فارغة'}
-          description="أضف بعض المنتجات الرائعة إلى سلتك وابدأ رحلة التسوق"
-          actionText="تسوق الآن"
+          description={t('cart_empty_description') || 'أضف بعض المنتجات الرائعة إلى سلتك وابدأ رحلة التسوق'}
+          actionText={t('shop_now') || 'تسوق الآن'}
           actionLink="/"
         />
       ) : (
         <>
-          {/* Cart Items */}
+
           <Grid container spacing={2} sx={{ mb: 4 }}>
             {items.map((p) => {
               const img = (p?.images?.find((i) => i?.isPrimary) || p?.images?.[0]) || {};
-              // try common keys
+
               let src = img.imageUrl || img.url || img.image_url || '/placeholder.svg';
               try {
                 const apiOrigin = new URL(axiosInstance.defaults.baseURL).origin;
@@ -150,7 +150,7 @@ export default function Cart() {
                   src = apiOrigin ? `${apiOrigin}${path}` : path;
                 }
               } catch (e) {
-                // ignore and use src as-is
+
               }
               return (
                 <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={p.productId}>
@@ -159,7 +159,7 @@ export default function Cart() {
                     <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{p?.title}</Typography>
 
-                      {/* Description limited to 4 lines */}
+
                       <Typography
                         variant="body2"
                         sx={{
@@ -182,9 +182,8 @@ export default function Cart() {
                         {Number(p?.price)?.toLocaleString()} {t('currency_iqd')}
                       </Typography>
 
-                      {/* Action Buttons */}
                       <Box sx={{ display: 'flex', gap: 1, mt: 'auto', alignItems: 'center' }}>
-                        {/* زر عرض التفاصيل */}
+
                         <Button
                           variant="outlined"
                           startIcon={<Visibility />}
@@ -204,7 +203,7 @@ export default function Cart() {
                           {t('view_details') || 'عرض التفاصيل'}
                         </Button>
 
-                        {/* زر الشراء السريع */}
+
                         <Button
                           variant="contained"
                           startIcon={<ShoppingCart />}
@@ -219,7 +218,7 @@ export default function Cart() {
                           {t('buy_now') || 'شراء الآن'}
                         </Button>
 
-                        {/* أيقونة الحذف الصغيرة */}
+
                         <IconButton
                           size="small"
                           onClick={() => removeOne(p?.productId)}
@@ -245,23 +244,23 @@ export default function Cart() {
             })}
           </Grid>
 
-          {/* Checkout Section */}
+
           <Paper sx={{ p: 3, mt: 4 }}>
             <Typography variant="h6" gutterBottom>
-              ملخص الطلب
+              {t('order_summary') || 'ملخص الطلب'}
             </Typography>
 
             <Divider sx={{ my: 2 }} />
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="body1">عدد المنتجات:</Typography>
+              <Typography variant="body1">{t('total_products')}:</Typography>
               <Typography variant="body1" fontWeight="bold">
-                {items.length} منتج
+                {items.length} {t('product')}
               </Typography>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-              <Typography variant="h6">المبلغ الإجمالي:</Typography>
+              <Typography variant="h6">{t('total_amount')}:</Typography>
               <Typography variant="h6" color="primary.main" fontWeight="bold">
                 {totalAmount.toLocaleString()} {t('currency_iqd')}
               </Typography>
@@ -273,7 +272,7 @@ export default function Cart() {
                 onClick={() => navigate('/')}
                 fullWidth
               >
-                متابعة التسوق
+                {t('continue_shopping')}
               </Button>
               <Button
                 variant="contained"
@@ -285,14 +284,14 @@ export default function Cart() {
                   '&:hover': { bgcolor: '#E55A2B' }
                 }}
               >
-                إتمام الدفع
+                {t('complete_payment')}
               </Button>
             </Box>
           </Paper>
         </>
       )}
 
-      {/* Payment Modal */}
+
       <PaymentModal
         open={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
