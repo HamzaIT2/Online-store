@@ -229,7 +229,7 @@ export default function App() {
   function AppContent() {
     const location = useLocation();
 
-    // صفحات المصادقة التي لا نريد أن يظهر فيها الفوتر
+
     const authPages = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-code'];
     const isAuthPage = authPages.includes(location.pathname);
 
@@ -238,7 +238,7 @@ export default function App() {
         <ScrollToTop />
         {!isAuthPage && <Navbar />}
         <Routes>
-          {/* 🌍 1. المسارات العامة (متاحة للزائرين بدون تسجيل دخول) */}
+
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/verify-code" element={<VerifyOTP />} />
@@ -246,14 +246,14 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/register" element={<Register />} />
           <Route path="/offers" element={<Offers />} />
-          
-          {/* ✅ تعديل: تفاصيل المنتج أصبحت عامة للزوار الآن */}
-          <Route path="/products/:id" element={<ProductDetails />} /> 
-          
-          {/* ✅ تعديل: تصفح الأقسام وتفاصيلها أصبح عاماً للزوار أيضاً */}
+
+
+          <Route path="/products/:id" element={<ProductDetails />} />
+
+
           <Route path="/categories" element={<Categories />} />
           <Route path="/categories/:id" element={<CategoryDetails />} />
-          
+
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route
@@ -261,7 +261,7 @@ export default function App() {
             element={<AuthenticateWithRedirectCallback />}
           />
 
-          {/* 🔒 2. المسارات المحمية (تطلب تسجيل دخول تلقائياً وتحول الزائر لصفحة الـ Login) */}
+
           <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/edit-product/:id" element={<ProtectedRoute><EditProduct /></ProtectedRoute>} /> {/* حماية صفحة التعديل */}
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -271,20 +271,20 @@ export default function App() {
           <Route path="/my-purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatLayout /></ProtectedRoute>} />
           <Route path="/payment/zain-cash/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-          
-          
-          <Route 
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
 
 
-          {/* توجيه أي مسار غير معروف إلى الرئيسية */}
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         {!isAuthPage && <Footer />}
