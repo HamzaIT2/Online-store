@@ -14,7 +14,9 @@ import {
 import PasswordIcon from '@mui/icons-material/PasswordOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { useTranslation } from 'react-i18next';
 const ResetPassword = () => {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -31,12 +33,12 @@ const ResetPassword = () => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setError('كلمات المرور غير متطابقة');
+      setError(t('reset_password_passwords_not_match'));
       return;
     }
 
     if (!token) {
-      setError('رابط غير صالح أو مفقود');
+      setError(t('reset_password_invalid_link'));
       return;
     }
 
@@ -49,7 +51,7 @@ const ResetPassword = () => {
         password: password
       });
 
-      setMessage('تم تغيير كلمة المرور بنجاح! سيتم تحويلك لصفحة الدخول...');
+      setMessage(t('reset_password_success'));
 
       // التوجيه التلقائي بعد 3 ثواني
       setTimeout(() => {
@@ -57,7 +59,7 @@ const ResetPassword = () => {
       }, 3000);
 
     } catch (err) {
-      setError('فشل التغيير، قد يكون الرابط منتهي الصلاحية.');
+      setError(t('reset_password_failed'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ const ResetPassword = () => {
         }}
       >
         <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-          تعيين كلمة مرور جديدة
+          {t('reset_password_title')}
         </Typography>
 
         {message && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>{message}</Alert>}
@@ -86,7 +88,7 @@ const ResetPassword = () => {
             required
             fullWidth
             name="password"
-            label="كلمة المرور الجديدة"
+            label={t('reset_password_new_password')}
             type={showPassword ? "text" : "password"}
             id="password"
             value={password}
@@ -116,7 +118,7 @@ const ResetPassword = () => {
             required
             fullWidth
             name="confirmPassword"
-            label="تأكيد كلمة المرور"
+            label={t('reset_password_confirm_password')}
             type={showPassword ? "text" : "password"}
             id="confirmPassword"
             value={confirmPassword}
@@ -148,7 +150,7 @@ const ResetPassword = () => {
             sx={{ mt: 3, mb: 2 }}
             disabled={loading}
           >
-            {loading ? 'جاري التحديث...' : 'تغيير كلمة المرور'}
+            {loading ? t('reset_password_loading') : t('reset_password_change')}
           </Button>
         </Box>
       </Box>
