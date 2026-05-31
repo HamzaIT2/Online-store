@@ -1,77 +1,35 @@
-/* eslint-disable no-unused-vars */
 import axiosInstance from "./axiosInstance";
 
 export const getAllProducts = async (filters = {}, search = "") => {
-  const hasFilters = Object.keys(filters).some(
-    (key) =>
-      filters[key] !== null &&
-      filters[key] !== undefined &&
-      filters[key] !== "",
-  );
-  const hasSearch = search && search.trim();
-
-  const endpoint = hasFilters ? "/products/filter" : "/products";
   const params = {};
 
-  // Add search parameter (only if not empty)
-  if (hasSearch) {
-    params.search = search.trim();
+  if (search && search.trim()) params.search = search.trim();
+
+  if (filters.category && String(filters.category).trim() && filters.category !== "undefined" && filters.category !== "null") {
+    params.categoryId = String(filters.category).trim();
   }
 
-  // Add filter parameters (only if not empty)
-  if (
-    filters.category &&
-    filters.category.trim() &&
-    filters.category !== "undefined" &&
-    filters.category !== "null"
-  ) {
-    params.categoryId = filters.category.trim();
-  }
-  if (filters.provinceId && filters.provinceId !== null) {
-    params.provinceId = filters.provinceId;
-  }
-  if (filters.city && filters.city.trim()) {
-    params.cityId = filters.city.trim();
-  }
-  if (
-    filters.condition &&
-    filters.condition !== null &&
-    ["new", "used", "like_new", "bad"].includes(filters.condition)
-  ) {
-    params.condition = filters.condition;
+  if (filters.provinceId) params.provinceId = filters.provinceId;
+  if (filters.city) params.cityId = filters.city.trim();
+  if (filters.condition) params.condition = filters.condition;
+
+  if (filters.priceRange && Array.isArray(filters.priceRange)) {
+    if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 2000000) {
+      params.minPrice = String(filters.priceRange[0]);
+      params.maxPrice = String(filters.priceRange[1]);
+    }
   }
 
-  // Handle price range (only if valid values exist)
-  if (
-    filters.minPrice !== null &&
-    filters.minPrice !== undefined &&
-    filters.minPrice !== ""
-  ) {
-    params.minPrice = String(filters.minPrice);
-  }
-  if (
-    filters.maxPrice !== null &&
-    filters.maxPrice !== undefined &&
-    filters.maxPrice !== ""
-  ) {
-    params.maxPrice = String(filters.maxPrice);
-  }
+  params.page = filters.page ? String(filters.page) : "1";
+  params.limit = filters.limit ? String(filters.limit) : "20";
 
-  // Add pagination parameters (only if not empty)
-  if (filters.page != null && filters.page !== "") {
-    params.page = String(filters.page);
-  }
-  if (filters.limit != null && filters.limit !== "") {
-    params.limit = String(filters.limit);
-  }
+  const query = new URLSearchParams(params).toString();
 
-  // Only add query string if there are parameters
-  const query =
-    Object.keys(params).length > 0
-      ? new URLSearchParams(params).toString()
-      : "";
-  const url = query ? `${endpoint}?${query}` : endpoint;
 
-  const res = await axiosInstance.get(url);
+  const endpoint = `/products/filter?${query}`;
+
+
+
+  const res = await axiosInstance.get(endpoint);
   return res;
 };
