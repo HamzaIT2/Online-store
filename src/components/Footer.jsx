@@ -52,9 +52,9 @@ export default function Footer() {
                 sx={{
                     background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)',
                     color: 'white',
-                    pt: 6,
+                    pt: 3,
                     pb: 3,
-                    mt: 8,
+                    mt: 9,
                     position: 'relative',
                     overflow: 'hidden',
                     '&::before': {
@@ -77,7 +77,7 @@ export default function Footer() {
                 <Container maxWidth="lg">
                     <Fade in timeout={1000}>
                         <Grid container spacing={4}>
-                            {/* العمود الأول: معلومات المتجر */}
+
                             <Grid item xs={12} md={4}>
                                 <Box sx={{ mb: 3 }}>
                                     <Typography
@@ -119,14 +119,14 @@ export default function Footer() {
                                     </Box>
                                 </Box>
 
-                                {/* معلومات الاتصال */}
+
                                 <Box sx={{ mt: 3 }}>
                                     <ContactInfo icon={<Email />} text="hmzhkymr4@gmail.com" href="mailto:hmzhkymr4@gmail.com" />
                                     <ContactInfo icon={<Phone />} text="+964 782 292 5016" href="tel:+9647822925016" />
                                 </Box>
                             </Grid>
 
-                            {/* العمود الثاني: روابط سريعة */}
+
                             <Grid item xs={12} sm={6} md={2}>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, color: '#ffffff' }}>
                                     {t('quick_links') || "روابط سريعة"}
@@ -151,7 +151,7 @@ export default function Footer() {
                                 </Box>
                             </Grid>
 
-                            {/* العمود الثالث: خدمة العملاء */}
+
                             <Grid item xs={12} sm={6} md={3}>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, color: '#ffffff' }}>
                                     {t('customer_service')}
@@ -176,7 +176,7 @@ export default function Footer() {
                                 </Box>
                             </Grid>
 
-                            {/* العمود الرابع: النشرة البريدية والمميزات */}
+
                             <Grid item xs={12} md={3}>
                                 <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, color: '#ffffff' }}>
                                     {t('newsletter') || "النشرة البريدية"}
@@ -234,12 +234,12 @@ export default function Footer() {
                                     </Button>
                                 </Box>
 
-                                {/* شعارات الثقة */}
+
                                 <Box sx={{ mt: 3 }}>
                                     <Typography variant="subtitle2" sx={{ mb: 2, color: '#ffffff' }}>
                                         {t('trust_badges') || "نضمن لك الأمان"}
                                     </Typography>
-                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                                         <TrustBadge icon={<Security />} text={t('secure_payment') || "دفع آمن"} />
                                         <TrustBadge icon={<LocalShipping />} text={t('fast_delivery') || "توصيل سريع"} />
                                         <TrustBadge icon={<SupportAgent />} text={t('24_7_support') || "دعم 24/7"} />
@@ -248,42 +248,22 @@ export default function Footer() {
                             </Grid>
                         </Grid>
                     </Fade>
+                    <Divider sx={{ mb: 3, mt: 3, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
 
-                    {/* قسم الإحصائيات */}
-                    <Box sx={{ mt: 6, mb: 4 }}>
-                        <Divider sx={{ mb: 4, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
-                        <Grid container spacing={3} textAlign="center">
-                            <Grid item xs={6} md={3}>
-                                <StatBox number="10,000+" label={t('happy_customers') || "عميل سعيد"} />
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                                <StatBox number="5,000+" label={t('products') || "منتج"} />
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                                <StatBox number="98%" label={t('satisfaction') || "نسبة الرضا"} />
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                                <StatBox number="24/7" label={t('support') || "دعم فني"} />
-                            </Grid>
-                        </Grid>
-                    </Box>
 
-                    {/* قسم طرق الدفع */}
-                    <Box sx={{ mb: 4 }}>
+                    <Box sx={{ mb: 5 }}>
                         <Typography variant="h6" sx={{ textAlign: 'center', mb: 3, color: '#ffffff' }}>
                             {t('payment_methods') || "طرق الدفع المتاحة"}
                         </Typography>
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-                            <PaymentMethod name="Mastercard" />
-                            <PaymentMethod name="Visa" />
-                            <PaymentMethod name="PayPal" />
-                            <PaymentMethod name="Cash on Delivery" />
+                            <PaymentMethod name={t('zain_cash')} />
+                            <PaymentMethod name={t('caches')} />
                         </Box>
                     </Box>
 
                     <Divider sx={{ my: 4, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
 
-                    {/* حقوق النشر */}
+
                     <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="body2" sx={{ color: '#888888' }}>
                             © {new Date().getFullYear()} {t('site_name')}. {t('copyright') || "جميع الحقوق محفوظة."}
@@ -292,7 +272,7 @@ export default function Footer() {
                 </Container>
             </Box>
 
-            {/* زر العودة للأعلى */}
+
             <Fade in={showBackToTop}>
                 <IconButton
                     onClick={scrollToTop}
@@ -319,7 +299,7 @@ export default function Footer() {
     );
 }
 
-// مكونات مساعدة للتصميم المحسن
+
 function SocialIconButton({ children, href, color }) {
     return (
         <IconButton
