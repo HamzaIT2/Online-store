@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import axiosInstance from '../api/axiosInstance'; // تأكد من مسار الـ axios
+import { t } from '../i18n';
 
 export default function PromoteModal({ open, onClose, productId }) {
   const [plans, setPlans] = useState([]);
@@ -22,7 +23,7 @@ export default function PromoteModal({ open, onClose, productId }) {
           setFetching(false);
         })
         .catch(err => {
-          console.error("فشل جلب الباقات", err);
+          console.error(t('promote_fetch_error'), err);
           setFetching(false);
         });
     }
@@ -39,12 +40,12 @@ export default function PromoteModal({ open, onClose, productId }) {
       });
 
       // رسالة نجاح
-      alert('تم تفعيل الإعلان المميز بنجاح! سيظهر الآن في الصفحة الرئيسية 🚀');
+      alert(t('promote_success'));
       onClose();
       window.location.reload(); // تحديث الصفحة لرؤية النتائج
     } catch (error) {
-      console.error(error);
-      alert('حدث خطأ أثناء العملية، حاول مرة أخرى.');
+      console.error(t('promote_error'), error);
+      alert(t('promote_error'));
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,12 @@ export default function PromoteModal({ open, onClose, productId }) {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" dir="rtl">
       <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
         <AutoAwesomeIcon color="warning" />
-        ميز إعلانك وضاعف المشاهدات
+        {t('promote_title')}
       </DialogTitle>
 
       <DialogContent dividers>
         <Typography align="center" sx={{ mb: 3, color: 'text.secondary' }}>
-          اختر الباقة المناسبة ليظهر منتجك في أعلى الصفحة الرئيسية (Hero Section)
+          {t('promote_description')}
         </Typography>
 
         {fetching ? (
@@ -83,7 +84,7 @@ export default function PromoteModal({ open, onClose, productId }) {
                   {/* شارة تم الاختيار */}
                   {selectedPlanId === plan.id && (
                     <Chip
-                      label="تم الاختيار"
+                      label={t('promote_selected')}
                       color="primary"
                       size="small"
                       sx={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)' }}
@@ -105,7 +106,7 @@ export default function PromoteModal({ open, onClose, productId }) {
 
                     <Box sx={{ mt: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                       <Typography variant="body2" fontWeight="bold">
-                        لمدة {plan.days} أيام
+                       {t('promote_duration')} {plan.days} {t('promote_days')}
                       </Typography>
                     </Box>
                   </CardActionArea>
@@ -128,7 +129,7 @@ export default function PromoteModal({ open, onClose, productId }) {
           onClick={handlePromote}
           sx={{ px: 4, borderRadius: 20 }}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'دفع وتفعيل العرض'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : t('promote_pay_and_activate')}
         </Button>
       </DialogActions>
     </Dialog>
