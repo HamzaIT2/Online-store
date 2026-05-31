@@ -17,7 +17,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { t, getCurrentLang } from '../i18n';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const { darkMode } = useTheme();
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -42,7 +42,7 @@ const ProtectedRoute = ({ children }) => {
       return;
     }
 
-    // تحديث بيانات المستخدم
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     user.termsAccepted = true;
     localStorage.setItem('user', JSON.stringify(user));
@@ -60,13 +60,18 @@ const ProtectedRoute = ({ children }) => {
     window.location.href = '/login';
   };
 
-  // التحقق من وجود توكن
+
   const token = localStorage.getItem('token');
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  // التحقق من الموافقة على الشروط
+  const role = localStorage.getItem('role') || 'user';
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+
+
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!user.termsAccepted) {
     return (
