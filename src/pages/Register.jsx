@@ -383,16 +383,16 @@ export default function Register() {
         } else if (resp.statusText) {
           errorMessage = resp.statusText;
         } else {
-          errorMessage = 'حدث خطأ أثناء التسجيل';
+          errorMessage = t('register_error');
         }
 
 
         setError(errorMessage);
       } else {
-        setError(err?.message || 'حدث خطأ في الاتصال بالخادم');
+        setError(err?.message || t('register_error'));
       }
 
-      console.error('تفاصيل الخطأ:', err.response?.data);
+      console.error(t('register_error_details'), err.response?.data);
     } finally {
       setLoading(false);
     }
@@ -486,13 +486,13 @@ export default function Register() {
         <Star sx={{ fontSize: 22, color: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.16)' }} />
       </Box>
 
-      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 2 }}>
-        <Slide direction="down" in timeout={800}>
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 0 }}>
+        <Slide direction="down" in timeout={1000}>
           <Paper
             elevation={24}
             sx={{
-              p: 4,
-              borderRadius: 4,
+              p: 6,
+              borderRadius: 9,
               background: darkMode
                 ? 'rgba(30, 30, 46, 0.95)'
                 : 'rgba(255, 255, 255, 0.95)',
@@ -530,23 +530,7 @@ export default function Register() {
           >
             {/* Header Section */}
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Fade in timeout={1000}>
-                <Avatar
-                  sx={{
-                    bgcolor: 'linear-gradient(45deg, #667eea, #764ba2)',
-                    width: 80,
-                    height: 80,
-                    mx: 'auto',
-                    mb: 2,
-                    boxShadow: darkMode
-                      ? '0 8px 32px rgba(102, 126, 234, 0.4)'
-                      : '0 8px 32px rgba(102, 126, 234, 0.3)',
-                    animation: 'pulse 2s ease-in-out infinite',
-                  }}
-                >
-                  <HowToReg sx={{ fontSize: 40 }} />
-                </Avatar>
-              </Fade>
+
 
               <Zoom in timeout={1200}>
                 <Typography
@@ -568,7 +552,7 @@ export default function Register() {
 
               <Fade in timeout={1400}>
                 <Typography variant="body2" sx={{ color: darkMode ? '#aaa' : '#666', mb: 3 }}>
-                  أنشئ حسابك الجديد وابدأ رحلتك معنا
+                  {t('register_subtitle')}
                 </Typography>
               </Fade>
             </Box>
@@ -604,7 +588,7 @@ export default function Register() {
                     </IconButton>
                   </Tooltip>
                   <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ color: darkMode ? '#aaa' : '#666', mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: darkMode ? '#f5f5f5' : '#666', mb: 1 }}>
                       {t('register_avatar') || 'اختر صورة البروفايل'}
                     </Typography>
                     <input
@@ -679,7 +663,7 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Person sx={{ color: darkMode ? '#667eea' : '#667eea' }} />
+                        <Person sx={{ color: darkMode ? '#fbfcff' : '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -773,7 +757,7 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailOutlined sx={{ color: darkMode ? '#667eea' : '#667eea' }} />
+                        <EmailOutlined sx={{ color: darkMode ? '#f7f7f7' : '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -825,7 +809,7 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Phone sx={{ color: darkMode ? '#667eea' : '#667eea' }} />
+                        <Phone sx={{ color: darkMode ? '#ececec' : '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -876,7 +860,7 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlined sx={{ color: darkMode ? '#667eea' : '#667eea' }} />
+                        <LockOutlined sx={{ color: darkMode ? '#e7e7e7' : '#667eea' }} />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -885,7 +869,7 @@ export default function Register() {
                           onClick={() => setShowPassword((v) => !v)}
                           edge="end"
                           aria-label="toggle password visibility"
-                          sx={{ color: darkMode ? '#667eea' : '#667eea' }}
+                          sx={{ color: darkMode ? '#dbdbdb' : '#667eea' }}
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
@@ -941,7 +925,7 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LocationCity sx={{ color: darkMode ? '#667eea' : '#667eea' }} />
+                        <LocationCity sx={{ color: darkMode ? '#ffffff' : '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -968,7 +952,7 @@ export default function Register() {
                   }}
                   variant="outlined"
                   disabled={!formData.province}
-                  helperText={!formData.province ? "يرجى اختيار المحافظة أولاً" : cities.length === 0 ? "لا توجد مدن متاحة" : ""}
+                  helperText={!formData.province ? t('select_province_first') : cities.length === 0 ? t('no_cities_available') : ""}
                   sx={{
                     mb: 2,
                     '& .MuiOutlinedInput-root': {
@@ -1001,13 +985,13 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LocationCity sx={{ color: darkMode ? '#667eea' : '#667eea' }} />
+                        <LocationCity sx={{ color: darkMode ? '#e2e2e2' : '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
                 >
                   <MenuItem value="" disabled>
-                    {formData.province ? "اختر المدينة" : "يرجى اختيار المحافظة أولاً"}
+                    {formData.province ? t('select_city') : t('select_province_first')}
                   </MenuItem>
                   {cities.map((city, index) => {
                     const cityName = getCurrentLang() === 'ar'
@@ -1121,11 +1105,13 @@ export default function Register() {
                           target="_blank"
                           sx={{
                             mx: 1,
-                            color: '#667eea',
+                            color: '#dadbdd',
                             textDecoration: 'none',
                             fontWeight: 'bold',
                             '&:hover': {
-                              textDecoration: 'underline'
+                              textDecoration: 'underline',
+                              color: '#667eea',
+                              textDecorationColor: '#667eea',
                             }
                           }}
                         >
@@ -1137,11 +1123,13 @@ export default function Register() {
                           target="_blank"
                           sx={{
                             mx: 1,
-                            color: '#667eea',
+                            color: '#eaeaeb',
                             textDecoration: 'none',
                             fontWeight: 'bold',
                             '&:hover': {
-                              textDecoration: 'underline'
+                              textDecoration: 'underline',
+                              color: '#667eea',
+                              textDecorationColor: '#667eea',
                             }
                           }}
                         >
@@ -1155,22 +1143,24 @@ export default function Register() {
 
               {/* Login Link */}
               <Box sx={{ textAlign: 'center', mt: 3 }}>
-                <Typography variant="body2" sx={{ color: darkMode ? '#aaa' : '#666' }}>
-                  لديك حساب بالفعل؟
+                <Typography variant="body2" sx={{ color: darkMode ? '#ffffff' : '#666' }}>
+                  {t('already_have_account')}
                   <RouterLink
                     to="/login"
                     variant="body2"
                     sx={{
                       fontWeight: 'bold',
-                      color: '#667eea',
+                      color: '#e9eaf0',
                       textDecoration: 'none',
                       mx: 1,
                       '&:hover': {
-                        textDecoration: 'underline'
+                        textDecoration: 'underline',
+                        color: '#e9e9e9',
+                        textDecorationColor: '#667eea',
                       }
                     }}
                   >
-                    سجل دخولك
+                    {t('login')}
                   </RouterLink>
                 </Typography>
               </Box>
