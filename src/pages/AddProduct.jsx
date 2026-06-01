@@ -17,8 +17,12 @@ import { motion } from 'framer-motion';
 // --- الثوابت والبيانات الاحتياطية (كما هي في كودك) ---
 const CONDITION_OPTIONS = [
   { key: 'condition_new', value: 'new' },
+  { key: 'condition_like_new', value: 'like_new' },
+  { key: 'condition_good', value: 'good' },
   { key: 'condition_used', value: 'used' },
-  { key: 'condition_bad', value: 'bad' },
+  { key: 'condition_fair', value: 'fair' },
+
+
 ];
 
 const CATEGORY_OPTIONS = [
@@ -58,7 +62,7 @@ export default function AddProduct() {
     categoryId: '',
     subcategoryId: '',
     price: '',
-    condition: 'new',  // Changed from 'good' to 'new' (backend enum)
+    condition: '',  // Changed from 'good' to 'new' (backend enum)
     provinceId: '',     // Will be set to number when province selected
     cityId: '',
     address: '',
@@ -137,16 +141,34 @@ export default function AddProduct() {
 
   // Helper function to get subcategories of selected main category
   const getSelectedCategorySubcategories = () => {
-    const selectedCategory = categories.find(cat =>
-      (cat.id === selectedMainCategoryId) || (cat.categoryId === selectedMainCategoryId)
-    );
-    return selectedCategory?.subs || [];
-  };
+    if (!selectedMainCategoryId) return [];
 
+    // 1. البحث عن القسم الرئيسي المختار
+    const selectedCategory = categories.find(cat =>
+      String(cat.id) === String(selectedMainCategoryId) ||
+      String(cat.categoryId) === String(selectedMainCategoryId)
+    );
+
+    // 2. إذا كان الباك اند يرسل الفروع بداخل القسم (Nested)
+    const nestedSubs = selectedCategory?.subCategories || selectedCategory?.children || selectedCategory?.subcategories || selectedCategory?.subs;
+    if (nestedSubs && Array.isArray(nestedSubs) && nestedSubs.length > 0) {
+      return nestedSubs;
+    }
+
+    // 3. الحل السحري: إذا كان الباك اند يرسل كل الأقسام معاً ويعتمد على (parentId) لتمييز الفروع
+    const flatSubs = categories.filter(cat =>
+      String(cat.parentId) === String(selectedMainCategoryId) ||
+      String(cat.parent_id) === String(selectedMainCategoryId) ||
+      String(cat.parentCategoryId) === String(selectedMainCategoryId)
+    );
+
+    return flatSubs;
+  };
   // Handle main category selection
   const handleMainCategoryChange = (categoryId) => {
     setSelectedMainCategoryId(categoryId);
     setSelectedSubCategoryId(''); // Reset subcategory when main category changes
+    console.log("All Categories from backend: ", categories);
   };
 
   // Handle subcategory selection
@@ -159,7 +181,7 @@ export default function AddProduct() {
 
     // Check if adding these files would exceed the limit
     if (files.length + selectedFiles.length > 10) {
-      setImageError('الحد الأقصى للصور هو 10 صور فقط');
+      setImageError(t('max_images_limit'));
       return;
     }
 
@@ -215,7 +237,7 @@ export default function AddProduct() {
     }
 
     if (files.length === 0) {
-      setError('يجب إضافة صورة واحدة على الأقل');
+      setError(t('min_images_required'));
       setLoading(false);
       return;
     }
@@ -224,11 +246,11 @@ export default function AddProduct() {
     // Ensure categoryId is a valid number - prioritize subcategory, fallback to main category
     let categoryIdToSend = null;
 
-    if (selectedSubCategoryId && selectedSubCategoryId !== '') {
-      // For subcategories, we need to find the corresponding main category ID
-      // Since subcategories are strings, we'll use the main category ID as the categoryId
-      categoryIdToSend = Number(selectedMainCategoryId);
-    } else if (selectedMainCategoryId && selectedMainCategoryId !== '') {
+    if (selectedSubCategoryId && String(selectedSubCategoryId).trim() !== '') {
+      // ✅ التعديل السحري: نرسل القسم الفرعي الحقيقي لأن له ID في قاعدة البيانات
+      categoryIdToSend = Number(selectedSubCategoryId);
+    } else if (selectedMainCategoryId && String(selectedMainCategoryId).trim() !== '') {
+      // إذا لم يقم باختيار قسم فرعي، نرسل الرئيسي
       categoryIdToSend = Number(selectedMainCategoryId);
     }
 
@@ -243,7 +265,7 @@ export default function AddProduct() {
       title: form.title,
       description: form.description,
       price: Math.max(0, parseFloat(form.price)),
-      categoryId: categoryIdToSend,
+      categoryId: categoryIdToSend, // الآن سيرسل 70 للهواتف أو 80 للعطور!
       condition: form.condition,
       provinceId: Number(form.provinceId),
       cityId: Number(form.cityId),
@@ -348,7 +370,7 @@ export default function AddProduct() {
                   value={form.title}
                   onChange={(e) => update('title', e.target.value)}
                   variant="outlined"
-                  placeholder="مثال: آيفون 13 برو ماكس نظيف جداً"
+                  placeholder={t('field_title_placeholder')}
                 />
               </Grid>
 
@@ -363,13 +385,14 @@ export default function AddProduct() {
                   onChange={(e) => handleMainCategoryChange(e.target.value)}
                 >
                   {categories.map((c) => {
-
-                    // Determine current language
                     const isArabic = getCurrentLang() === 'ar';
+                    // استخراج الـ ID والاسم بشكل آمن جداً
+                    const catId = c.categoryId || c.id;
+                    const catName = isArabic ? (c.nameAr || c.name_ar || c.name) : (c.nameEn || c.name);
 
                     return (
-                      <MenuItem key={c.id} value={c.id}>
-                        {isArabic ? c.name_ar : c.name}
+                      <MenuItem key={catId} value={catId}>
+                        {catName}
                       </MenuItem>
                     );
                   })}
@@ -380,32 +403,31 @@ export default function AddProduct() {
                 <TextField
                   select
                   fullWidth
-                  label="القسم الفرعي"
+                  label={t('field_subcategory')}
                   value={selectedSubCategoryId}
                   onChange={(e) => handleSubcategoryChange(e.target.value)}
                   disabled={!selectedMainCategoryId || getSelectedCategorySubcategories().length === 0}
                 >
-                  {getSelectedCategorySubcategories().map((sub, index) => {
-                    // Handle both string and object formats for subcategories
-                    const subValue = typeof sub === 'string' ? sub : (sub.en || sub.ar || sub);
+                  {getSelectedCategorySubcategories().map((subItem, index) => {
+                    // حماية إضافية لمنع الأخطاء إذا كانت القيمة فارغة
+                    if (!subItem) return null;
 
-                    // Determine current language
                     const isArabic = getCurrentLang() === 'ar';
 
-                    // Handle multilingual display for subcategories
-                    const subLabel = typeof sub === 'string'
-                      ? sub
-                      : (isArabic ? sub.name_ar : sub.name);
+                    // استخراج معرف واسم القسم الفرعي بمرونة تامة
+                    const subId = subItem.categoryId || subItem.id || (typeof subItem === 'string' ? subItem : index);
+                    const subLabel = typeof subItem === 'string'
+                      ? subItem
+                      : (isArabic ? (subItem.nameAr || subItem.name_ar || subItem.name) : (subItem.nameEn || subItem.name));
 
                     return (
-                      <MenuItem key={index} value={subValue}>
+                      <MenuItem key={subId} value={subId}>
                         {subLabel}
                       </MenuItem>
                     );
                   })}
                 </TextField>
               </Grid>
-
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -415,7 +437,7 @@ export default function AddProduct() {
                   value={form.description}
                   onChange={(e) => update('description', e.target.value)}
                   variant="outlined"
-                  placeholder="اذكر جميع التفاصيل، الملحقات، والعيوب إن وجدت..."
+                  placeholder={t('field_description_placeholder')}
                 />
               </Grid>
 
@@ -428,8 +450,8 @@ export default function AddProduct() {
                   value={form.condition}
                   onChange={(e) => update('condition', e.target.value)}
                 >
-                  {CONDITION_OPTIONS.map((o) => (
-                    <MenuItem key={o.value} value={o.value}>{t(o.key)}</MenuItem>
+                  {CONDITION_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>{t(option.key)}</MenuItem>
                   ))}
                 </TextField>
               </Grid>
@@ -480,7 +502,7 @@ export default function AddProduct() {
                   label={t('field_address')}
                   value={form.address}
                   onChange={(e) => update('address', e.target.value)}
-                  placeholder="اسم المنطقة / أقرب نقطة دالة"
+                  placeholder={t('field_address_placeholder')}
                 />
               </Grid>
 
@@ -506,7 +528,7 @@ export default function AddProduct() {
                     {t('field_images_upload')} ({files.length}/10)
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    أضف صوراً واضحة لمنتجك. الحد الأقصى 10 صور.
+                    {t('field_images_upload_description')}
                   </Typography>
                 </Box>
 
@@ -537,10 +559,10 @@ export default function AddProduct() {
                   >
                     <CloudUploadIcon sx={{ fontSize: 40, color: files.length >= 10 ? '#ccc' : '#1976d2', mb: 1 }} />
                     <Typography variant="h6" color={files.length >= 10 ? '#ccc' : 'primary'}>
-                      {files.length >= 10 ? 'تم الوصول للحد الأقصى' : 'اختر الصور'}
+                      {files.length >= 10 ? 'تم الوصول للحد الأقصى' : t('field_images_upload_button')}
                     </Typography>
                     <Typography variant="caption" color="textSecondary">
-                      JPG, PNG - الحجم الأقصى 5MB للصورة الواحدة
+                      {t('field_images_upload_description')}
                     </Typography>
                     <input
                       type="file"
@@ -563,7 +585,7 @@ export default function AddProduct() {
                 {files.length > 0 && (
                   <Box sx={{ mt: 3 }}>
                     <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
-                      معاينة الصور (اضغط على النجمة لتحديد صورة الغلاف):
+                      {t('field_images_preview')}
                     </Typography>
                     <Grid container spacing={2}>
                       {files.map((file, index) => (
@@ -585,7 +607,7 @@ export default function AddProduct() {
                             {index === coverImageIndex && (
                               <Chip
                                 icon={<StarIcon sx={{ fontSize: 16 }} />}
-                                label="صورة الغلاف"
+                                label={t('field_images_cover')}
                                 size="small"
                                 color="primary"
                                 sx={{
@@ -628,7 +650,7 @@ export default function AddProduct() {
                                   bgcolor: 'rgba(255, 255, 255, 0.9)',
                                   '&:hover': { bgcolor: 'white' }
                                 }}
-                                title={index === coverImageIndex ? 'صورة الغلاف الحالية' : 'تعيين كصورة غلاف'}
+                                title={index === coverImageIndex ? t('field_images_cover_current') : t('field_images_cover_set')}
                               >
                                 {index === coverImageIndex ? (
                                   <StarIcon color="primary" fontSize="small" />
@@ -646,7 +668,7 @@ export default function AddProduct() {
                                   color: 'white',
                                   '&:hover': { bgcolor: '#d32f2f' }
                                 }}
-                                title="حذف الصورة"
+                                title={t('field_images_delete')}
                               >
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
@@ -679,18 +701,7 @@ export default function AddProduct() {
                 )}
               </Grid>
 
-              <Grid item xs={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={form.isNegotiable}
-                      onChange={(e) => update('isNegotiable', e.target.checked)}
-                      color="primary"
-                    />
-                  }
-                  label="السعر قابل للتفاوض؟"
-                />
-              </Grid>
+
 
               {/* 6. Submit Button */}
               <Grid item xs={12}>
