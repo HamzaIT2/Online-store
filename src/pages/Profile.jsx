@@ -179,8 +179,7 @@ export default function Profile() {
       return img;
     }
 
-    // For /uploads/ paths, Vite proxy should handle it
-    // Just return path as-is, let SafeAvatar handle errors
+
     return img;
   };
 
@@ -211,13 +210,11 @@ export default function Profile() {
       formData.append('avatar', file);
 
       // Use correct avatar upload endpoint
-      const res = await axiosInstance.post(`/users/${profile.id}/avatar`, formData, {
+      const res = await axiosInstance.post(`/users/${profile.id || profile.userId}/avatar`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Keep preview since backend doesn't return avatar field
 
-      // Reload profile to get updated avatar
       const profileRes = await axiosInstance.get('/users/profile');
       const p = profileRes || {};
 
@@ -229,8 +226,9 @@ export default function Profile() {
         avatar: p.avatar || p.avatarUrl || p.image || p.photo || p.picture || p.profileImage || p.profilePicture || p.userImage || p.userAvatar || ''
       });
 
-      // Don't clear avatarPreview - keep it as current avatar
+
       setAvatarFile(null);
+      window.dispatchEvent(new Event('profile:updated'));
 
     } catch (err) {
       let errorMessage = 'فشل رفع الصورة';
@@ -259,22 +257,22 @@ export default function Profile() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Prepare and clean payload - only send fields that backend accepts
+
       const payload = {};
 
-      // Only send fullName (backend rejects 'name')
+
       if (form.fullName && form.fullName.trim()) {
         payload.fullName = form.fullName.trim();
       }
 
-      // Only send phoneNumber (backend rejects 'phone')
+
       if (form.phone && form.phone.trim()) {
         payload.phoneNumber = form.phone.trim();
       }
 
-      // Don't send email - backend doesn't accept it in profile update
 
-      // Try PATCH first, then PUT if PATCH fails
+
+
       let response;
       try {
         response = await axiosInstance.patch('/users/profile', payload);
@@ -286,7 +284,7 @@ export default function Profile() {
         }
       }
 
-      // Reload profile to get updated data
+
       const profileRes = await axiosInstance.get('/users/profile');
       const p = profileRes || {};
 
@@ -299,16 +297,17 @@ export default function Profile() {
       });
 
       setEditing(false);
+      window.dispatchEvent(new Event('profile:updated'));
     } catch (err) {
       let errorMessage = 'فشل حفظ البيانات';
 
       if (err.response?.status === 400) {
-        // Show detailed validation errors
+
         const responseData = err.response?.data;
 
         errorMessage = 'بيانات غير صالحة. الرجاء التحقق من الحقول.';
 
-        // Handle different error response formats
+
         if (responseData?.message) {
           if (Array.isArray(responseData.message)) {
             // If message is an array, join all messages
@@ -355,9 +354,9 @@ export default function Profile() {
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4, mt: 10 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        الملف الشخصي
+        {t('profile')}
       </Typography>
 
       {error && (
@@ -422,7 +421,7 @@ export default function Profile() {
                   }}
                   sx={{ mb: 2 }}
                 >
-                  مسح المعاينة
+                  {t('clearPreview')}
                 </Button>
               )}
 
@@ -436,7 +435,7 @@ export default function Profile() {
                       startIcon={<SaveIcon />}
                       size="small"
                     >
-                      {saving ? 'جاري الحفظ...' : 'حفظ'}
+                      {saving ? t('saving') : t('save')}
                     </Button>
                     <Button
                       variant="outlined"
@@ -444,7 +443,7 @@ export default function Profile() {
                       startIcon={<CancelIcon />}
                       size="small"
                     >
-                      إلغاء
+                      {t('cancel')}
                     </Button>
                   </>
                 ) : (
@@ -454,7 +453,7 @@ export default function Profile() {
                     startIcon={<EditIcon />}
                     size="small"
                   >
-                    تعديل
+                    {t('edit')}
                   </Button>
                 )}
               </Box>
@@ -469,13 +468,13 @@ export default function Profile() {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  المعلومات الشخصية
+                  {t('personalInfo')}
                 </Typography>
 
                 <Stack spacing={2}>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      الاسم الكامل
+                      {t('fullName')}
                     </Typography>
                     {!editing ? (
                       <Typography variant="body1">
@@ -493,7 +492,7 @@ export default function Profile() {
 
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      البريد الإلكتروني
+                      {t('email')}
                     </Typography>
                     <Typography variant="body1">
                       {form.email || 'غير محدد'}
@@ -502,7 +501,7 @@ export default function Profile() {
 
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      رقم الهاتف
+                      {t('phone')}
                     </Typography>
                     {!editing ? (
                       <Typography variant="body1">
@@ -520,7 +519,7 @@ export default function Profile() {
 
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      اسم المستخدم
+                      {t('username')}
                     </Typography>
                     <Typography variant="body1">
                       {profile.username || 'غير محدد'}
@@ -531,19 +530,19 @@ export default function Profile() {
                 {editing && (
                   <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      ملاحظة: لا يمكن تعديل البريد الإلكتروني واسم المستخدم من هذه الصفحة
+                      {t('noteCannotEditEmailUsername')}
                     </Typography>
                     <Button
                       variant="outlined"
                       component="label"
                       size="small"
                     >
-                      اختيار صورة جديدة
+                      {t('chooseImage')}
                       <input hidden accept="image/*" type="file" onChange={handleFileChange} />
                     </Button>
                     {avatarFile && (
                       <Typography variant="body2" sx={{ mt: 1 }}>
-                        الملف المختار: {avatarFile.name}
+                        {t('selectedFile')}: {avatarFile.name}
                       </Typography>
                     )}
                   </Box>
@@ -555,11 +554,11 @@ export default function Profile() {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  الإحصائيات
+                  {t('statistics')}
                 </Typography>
 
                 <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
+                  {/* <Grid item xs={6} sm={3}>
                     <Paper
                       sx={{
                         p: 2,
@@ -574,10 +573,10 @@ export default function Profile() {
                         {stats.totalSales.toLocaleString()}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        المبيعات
+                        {t('sales')}
                       </Typography>
                     </Paper>
-                  </Grid>
+                  </Grid> */}
 
                   <Grid item xs={6} sm={3}>
                     <Paper
@@ -594,7 +593,7 @@ export default function Profile() {
                         {stats.totalProducts}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        المنتجات
+                        {t('products')}
                       </Typography>
                     </Paper>
                   </Grid>
@@ -614,7 +613,7 @@ export default function Profile() {
                         {stats.totalPurchases}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        المشتريات
+                        {t('purchases')}
                       </Typography>
                     </Paper>
                   </Grid>
@@ -634,7 +633,7 @@ export default function Profile() {
                         {stats.favoriteCount}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        المفضلة
+                        {t('favorites')}
                       </Typography>
                     </Paper>
                   </Grid>
