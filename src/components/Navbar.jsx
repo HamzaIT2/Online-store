@@ -2,9 +2,7 @@
 import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Menu, MenuItem, Avatar, Badge, Container, Tooltip, ListItemIcon, ListItemText, Switch, TextField, InputAdornment } from "@mui/material";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import TranslateIcon from "@mui/icons-material/Translate";
-
 import MenuIcon from '@mui/icons-material/Menu';
-import MessageIcon from '@mui/icons-material/Message';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
@@ -19,24 +17,14 @@ import { getMyFavorites } from "../api/favoritesAPI";
 import { Link as RouterLink, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { t, toggleLang } from "../i18n";
-// import { listChats } from "../api/messagesAPI";
 import axiosInstance from "../api/axiosInstance";
 import ContrastIcon from '@mui/icons-material/Contrast';
 import { styled } from '@mui/material/styles';
 import { CartIcon } from "./CartIcon";
 import ProfileDrawer from "./ProfileSidebar";
 import FilterDrawer from "../pages/FilterDrawer";
-
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
-import HeroSlider from "./HeroSlider";
-
-
-
-
-
-
-
 
 export default function Navbar() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -45,21 +33,16 @@ export default function Navbar() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const userType = typeof window !== 'undefined' ? (localStorage.getItem('userType') || 'buyer') : 'buyer';
-  // const canSell = !!token && (userType === 'seller' || userType === 'both'); // Unused variable
   const location = useLocation();
-  // const isActive = (path) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path)); // Unused variable
   const [searchParams] = useSearchParams();
   const [anchorProfile, setAnchorProfile] = useState(null);
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [favCount, setFavCount] = useState(0);
-  // const [chatCount, setChatCount] = useState(0);
   const [cartCount, setCartCount] = useState(4);
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // const openProfile = Boolean(anchorProfile); // Unused variable
 
   const leftLinks = [
     { label: t('home'), path: '/', icon: <HomeIcon /> },
@@ -67,7 +50,6 @@ export default function Navbar() {
     { label: t('cart'), path: '/cart', icon: <ShoppingCartIcon /> },
     { label: t('my_products') || 'إعلاناتي', path: '/my-products', icon: <ViewListIcon /> },
     { label: t('favorites'), path: '/favorites', icon: <FavoriteIcon /> },
-    // { label: t('my_messages') || 'رسائلي', path: '/chats', icon: <MessageIcon /> },
     { label: t('add_product') || 'إضافة إعلان', path: '/add-product', icon: <AddBoxIcon />, requiresAuth: true },
   ];
 
@@ -80,24 +62,13 @@ export default function Navbar() {
     },
   }));
 
-  // const handleOpenProfile = (event) => setAnchorProfile(event.currentTarget); // Unused
-  // const handleCloseProfile = () => setAnchorProfile(null); // Unused
+
   const handleOpenNavMenu = (event) => setAnchorElNav(event.currentTarget);
   const handleCloseNavMenu = () => setAnchorElNav(null);
   const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
   const handleCloseUserMenu = () => setAnchorElUser(null);
 
 
-
-
-
-
-
-
-
-
-
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (anchorElNav && !anchorElNav.contains(event.target)) {
@@ -148,18 +119,18 @@ export default function Navbar() {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (!token) { if (mounted) setFavCount(0); return; }
         const res = await getMyFavorites();
-        // Handle paginated response: { data: productsArray, total: number }
+   
         const data = res?.data || [];
         let products = [];
         if (Array.isArray(data)) {
           products = data.map(f => f.product || f).filter(Boolean);
         } else if (Array.isArray(res)) {
-          // Fallback for direct array response
+   
           products = res.map(f => f.product || f).filter(Boolean);
         }
         if (mounted) setFavCount(products.length);
       } catch (error) {
-        // Silent fail for 401 and other errors
+     
         if (error?.response?.status !== 401) {
           console.warn('Failed to load favorites count:', error?.response?.status);
         }
@@ -171,39 +142,131 @@ export default function Navbar() {
     window.addEventListener('favorites:updated', onUpdated);
     return () => { mounted = false; window.removeEventListener('favorites:updated', onUpdated); };
   }, []);
+  useEffect(() => {
+    const uploadPendingAvatar = async () => {
+    
 
-  // Load chats count for "My Messages" badge
-  // useEffect(() => {
-  //   let mounted = true;
-  //   const loadChats = async () => {
-  //     try {
-  //       if (!token) { if (mounted) setChatCount(0); return; }
-  //       const res = await listChats();
-  //       const data = res?.data ?? res;
-  //       const items = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []));
-  //       if (mounted) setChatCount(items.length || 0);
-  //     } catch (_) {
-  //       if (mounted) setChatCount(0);
-  //     }
-  //   };
-  //   loadChats();
-  //   return () => { mounted = false; };
-  // }, [token]);
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = storedUser?.userId || storedUser?.id;
+      if (!userId) return;
 
+      // فتح قاعدة بيانات المتصفح لقراءة الملف الأصلي
+      const dbRequest = indexedDB.open("AvatarDB", 1);
+      dbRequest.onsuccess = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains("images")) return;
+
+        const transaction = db.transaction("images", "readwrite");
+        const store = transaction.objectStore("images");
+        const getRequest = store.get("pendingAvatar");
+
+        getRequest.onsuccess = async () => {
+          const file = getRequest.result; // جلب ملف الصورة الحقيقي مباشرة!
+          if (!file) {
+          
+            return;
+          }
+
+        
+          try {
+            const fd = new FormData();
+            fd.append('avatar', file);
+
+            const token = localStorage.getItem('token');
+            const avatarRes = await axiosInstance.post(`/users/${userId}/avatar`, fd, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+
+            
+
+            if (avatarRes?.data) {
+              const updatedAvatar = avatarRes.data.avatar || avatarRes.data.profileImage;
+              if (updatedAvatar) {
+                storedUser.profileImage = updatedAvatar;
+                storedUser.avatar = updatedAvatar;
+                localStorage.setItem('user', JSON.stringify(storedUser));
+              }
+            }
+
+        
+            store.delete("pendingAvatar");
+          
+
+            window.location.reload(); 
+
+          } catch (error) {
+            console.error("❌ خطأ أثناء رفع الصورة للسيرفر:", error);
+          }
+        };
+      };
+    };
+
+    // تأخير خفيف لضمان استقرار بيانات تسجيل الدخول بعد الـ OTP
+    setTimeout(() => {
+      uploadPendingAvatar();
+    }, 600);
+
+  }, [location.pathname]);
   useEffect(() => {
     let mounted = true;
+
     const loadProfile = async () => {
       try {
-        if (!token) { if (mounted) setProfile(null); return; }
+        // 1. تحقق من وجود التوكن أولاً
+        const token = localStorage.getItem('token'); // أو حسب مكان تخزين التوكن عندك
+        if (!token) {
+          if (mounted) setProfile(null);
+          return;
+        }
+
+        // 2. قراءة فورية من الـ localStorage لمنع ظهور الحرف واختفاء الصورة عند الـ Refresh
+        const storedUser = localStorage.getItem('user');
+        if (storedUser && storedUser !== 'undefined') {
+          try {
+            const parsed = JSON.parse(storedUser);
+            if (mounted && parsed) {
+              setProfile(parsed);
+            }
+          } catch (e) {
+            console.error("Error parsing user from localStorage", e);
+          }
+        }
+
+        // 3. جلب البيانات الحديثة من السيرفر في الخلفية بنفس أسلوب Profile.jsx
         const res = await axiosInstance.get('/users/profile');
-        if (mounted) setProfile(res?.data || null);
-      } catch (_) {
-        if (mounted) setProfile(null);
+
+        // التعامل مع الاستجابة المرنة (سواء كانت الكائن مباشرة أو داخل data)
+        const p = res?.data || res || {};
+
+        if (mounted && p) {
+          // استخراج بيانات المستخدم النهائي
+          const userData = p.user || p.data || p;
+
+          setProfile(userData);
+
+          // حفظ النسخة الجديدة في الـ localStorage لتكون جاهزة للتحديث القادم
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+      } catch (error) {
+        console.error("Failed to load profile in Navbar:", error);
       }
     };
+
+    // تشغيل الدالة عند تحميل المكون
     loadProfile();
-    return () => { mounted = false; };
-  }, [token]);
+
+    // الاستماع للحدث عند تعديل البروفايل من صفحة البروفايل
+    const onProfileUpdated = () => loadProfile();
+    window.addEventListener('profile:updated', onProfileUpdated);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('profile:updated', onProfileUpdated);
+    };
+  }, []);
 
   // Load cart count
   useEffect(() => {
@@ -227,7 +290,7 @@ export default function Navbar() {
 
   const resolveAvatar = () => {
     if (!profile) return undefined;
-    const img = profile.avatar || profile.avatarUrl || profile.image || profile.photo || profile.picture;
+    const img = profile?.profileImage || profile?.avatar || profile?.avatarUrl || profile?.image || profile?.photo || profile?.picture;
     if (!img) return undefined;
     const hasProtocol = /^https?:\/\//i.test(img);
     if (hasProtocol) return img;
@@ -303,10 +366,10 @@ export default function Navbar() {
       <Container maxWidth="xl">
         <Toolbar disableGutters sx={{ minHeight: 56 }}>
 
-          {/* LEFT SIDE: Mobile Menu + Logo + Profile */}
+       
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 
-            {/* Mobile Menu Icon */}
+         
             <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
               <IconButton
                 size="medium"
@@ -450,7 +513,7 @@ export default function Navbar() {
               </Menu>
             </Box>
 
-            {/* Logo */}
+         
             <Typography
               variant="h6"
               noWrap
@@ -469,7 +532,7 @@ export default function Navbar() {
             </Typography>
           </Box>
 
-          {/* CENTER: Navigation Links + Search Bar */}
+      
           <Box sx={{
             flex: 1,
             display: 'flex',
@@ -479,7 +542,7 @@ export default function Navbar() {
             mx: 3
           }}>
 
-            {/* Desktop Navigation Links */}
+           
             <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
               <Button
                 component={RouterLink} to="/"
@@ -507,7 +570,7 @@ export default function Navbar() {
               </Button>
             </Box>
 
-            {/* Search Bar */}
+     
             <Box
               sx={{
                 display: { xs: 'none', md: 'flex' },
@@ -554,10 +617,10 @@ export default function Navbar() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     const trimmedSearch = searchTerm.trim();
                     if (trimmedSearch) {
-                      navigate(`/?q=${encodeURIComponent(trimmedSearch)}`);
+                      navigate(`/?search=${encodeURIComponent(trimmedSearch)}`);
                     } else {
                       navigate('/');
                     }
@@ -565,7 +628,7 @@ export default function Navbar() {
                 }}
                 InputProps={{
                   disableUnderline: true,
-                  sx: { fontSize: '14px' }
+                  sx: { fontSize: '14px', borderColor: '#ff6b35', color: '#ff6b35' }
                 }}
               />
 
@@ -578,7 +641,7 @@ export default function Navbar() {
           {/* RIGHT SIDE: Cart + Add Product */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 
-            {/* Cart Icon */}
+           
             <Tooltip title={t('cart')}>
               <IconButton
                 component={RouterLink}
@@ -595,7 +658,7 @@ export default function Navbar() {
               </IconButton>
             </Tooltip>
 
-            {/* Add Product Button */}
+         
             <Button
               onClick={handleAddProductNav}
               sx={{
@@ -617,7 +680,7 @@ export default function Navbar() {
               {t('add_product') || 'Add Listing'}
             </Button>
 
-            {/* Profile Icon - Works on all sizes */}
+          
             <Tooltip title={t('account_settings') || "Account settings"}>
               <IconButton
                 onClick={() => setIsDrawerOpen(true)}
@@ -627,10 +690,10 @@ export default function Navbar() {
                   <Avatar
                     src={resolveAvatar()}
                     sx={{
-                      width: 28,
-                      height: 28,
+                      width: 45,
+                      height: 45,
                       bgcolor: 'rgba(255,255,255,0.2)',
-                      border: '2px solid #ff6b35'
+
                     }}
                   >
                     {profile?.full_name?.charAt(0) || profile?.username?.charAt(0) || 'U'}
@@ -647,7 +710,7 @@ export default function Navbar() {
               </IconButton>
             </Tooltip>
 
-            {/* User Dropdown Menu */}
+            
             <Menu
               sx={{ mt: '40px' }}
               id="menu-appbar"
@@ -689,22 +752,6 @@ export default function Navbar() {
                 </ListItemIcon>
                 <ListItemText>{t('profile')}</ListItemText>
               </MenuItem>
-
-              {/* <MenuItem
-                onClick={() => { handleCloseUserMenu(); navigate('/chats'); }}
-                sx={{
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 107, 53, 0.1)',
-                    color: '#ff6b35'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ color: '#1a365d' }}>
-                  <MessageIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>{t('my_messages')}</ListItemText>
-              </MenuItem> */}
-
               <MenuItem
                 onClick={() => { handleCloseUserMenu(); navigate('/my-products'); }}
                 sx={{
@@ -823,8 +870,6 @@ export default function Navbar() {
 
         </Toolbar>
       </Container>
-
-      {/* Drawers */}
       <ProfileDrawer
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
