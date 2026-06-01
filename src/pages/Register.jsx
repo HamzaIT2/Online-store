@@ -22,10 +22,8 @@ import {
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { registerUser, loginUser } from "../api/authAPI";
 import { t } from "../i18n";
 import axiosInstance from "../api/axiosInstance";
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from "../context/ThemeContext";
@@ -157,23 +155,21 @@ export default function Register() {
         setProvinces(list);
       } catch (error) {
 
-        // Use fallback data with multilingual support
+
         setProvinces(PROVINCE_FALLBACKS);
       }
     };
     loadProvinces();
   }, []);
   const loadCities = async () => {
-    // 1. تنظيف القائمة القديمة
+
     setCities([]);
     setCityInput('');
 
-    // 2. إذا لم يختر المستخدم محافظة، لا تفعل شيئاً
+
     if (!formData.province) return;
 
     try {
-      // ✅ التصحيح هنا: نستخدم الرابط الذي طابقناه مع الباك إند مباشرة
-      // /provinces/ + رقم المحافظة + /cities
       const res = await axiosInstance.get(`/provinces/${formData.province}/cities`);
 
       // 3. التأكد من البيانات القادمة (أحياناً تكون داخل data أو مصفوفة مباشرة)
@@ -182,7 +178,7 @@ export default function Register() {
       setCities(list);
 
     } catch (error) {
-      // Use fallback data with multilingual support
+
       const currentLang = getCurrentLang();
       const key = String(formData.province);
       const fb = CITY_FALLBACKS[key] || CITY_FALLBACKS[key.replace(/^p-/, '')] || [];
@@ -195,7 +191,7 @@ export default function Register() {
     }
   };
 
-  // load cities when province changes
+
   useEffect(() => {
     loadCities();
   }, [formData.province]);
@@ -204,11 +200,11 @@ export default function Register() {
   const handleFileChange = (e) => {
     const f = e.target.files && e.target.files[0];
     setAvatarFile(f || null);
-    // keep avatar text field for backward compatibility (stores filename)
+
     setFormData((prev) => ({ ...prev, avatar: f ? f.name : '' }));
   };
 
-  // create preview URL when file changes
+
   useEffect(() => {
     if (!avatarFile) { setAvatarPreview(null); return; }
     const url = URL.createObjectURL(avatarFile);
@@ -229,31 +225,30 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    // client-side validation
+
     const errors = {};
     const trim = (v) => (typeof v === 'string' ? v.trim() : v);
     if (!trim(formData.username) || trim(formData.username).length < 3) errors.username = t('username_min_3') || 'Username must be at least 3 characters';
     if (!trim(formData.fullName) || trim(formData.fullName).length < 2) errors.fullName = t('fullname_min_2') || 'Full name must be at least 2 characters';
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trim(formData.email || ''))) errors.email = t('invalid_email') || 'Invalid email address';
-    // Iraqi phone validation: exactly 11 digits starting with 07
+
     const phoneRegex = /^07\d{9}$/;
     if (!phoneRegex.test(trim(formData.phone || ''))) errors.phone = 'رقم الهاتف يجب أن يكون 11 رقماً ويبدأ بـ 07';
     if (!formData.password || String(formData.password).length < 6) errors.password = t('password_min_6') || 'Password must be at least 6 characters';
 
-    // التحقق من الموافقة على الشروط والأحكام
     if (!agreeToTerms) {
       setError(t('must_agree_to_terms') || 'يجب الموافقة على الشروط والأحكام للمتابعة');
       setLoading(false);
       return;
     }
 
-    // province/city not required strictly, but validate basic types if provided
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       setError(t('please_fix_errors') || 'Please fix the errors above');
       setLoading(false);
-      return; // Stop here, don't proceed with API call
+      return;
     }
 
     try {
@@ -268,137 +263,80 @@ export default function Register() {
         city_id: formData.city ? Number(formData.city) : 1
       };
 
-
       const response = await axiosInstance.post('/auth/register', payload);
-
-
-
-      // Store email in localStorage for verification page
       localStorage.setItem('pendingEmail', formData.email);
 
-      // Use the response from the first registration call
-      const createRes = response;
-      // If server returned a token, store it (some APIs return token on register)
-      let returnedToken = createRes?.data?.token || createRes?.data?.accessToken || createRes?.data?.authToken;
-      if (returnedToken) {
-        try { localStorage.setItem('token', returnedToken); } catch (e) { /* ignore */ }
-      }
+      let userData = response?.data?.user || response?.data?.data || response?.data;
 
-      // If an avatar file is selected, upload it in a second request to common endpoints
-      if (avatarFile) {
-        const userId = createRes?.data?.user?.id || createRes?.data?.id || createRes?.data?.userId || createRes?.data?._id;
-        const urlCandidates = [];
-        if (userId) {
-          urlCandidates.push(`/users/avatar/${userId}`);
-          urlCandidates.push(`/users/${userId}/image`);
-          urlCandidates.push(`/images/upload/user/${userId}`);
-          urlCandidates.push(`/images/upload/${userId}`);
-        }
-        urlCandidates.push('/users/avatar');
-        urlCandidates.push('/users/upload-avatar');
-        urlCandidates.push('/users/avatar/upload');
-
+      if (avatarFile && userData && (userData.userId || userData.id)) {
+        const userId = userData.userId || userData.id;
         const fd = new FormData();
         fd.append('avatar', avatarFile);
-        // try each candidate until one succeeds
-        let uploaded = false;
-        for (const candidate of urlCandidates) {
-          try {
 
-            const opts = {};
-            // include token if we have it in localStorage
-            const token = localStorage.getItem('token');
-            if (token) opts.headers = { Authorization: `Bearer ${token}` };
-            await axiosInstance.post(candidate, fd, opts);
-            uploaded = true;
-
-            break;
-          } catch (e) {
-            // Avatar upload failed, will try next endpoint
+        try {
+          const avatarRes = await axiosInstance.post(`/users/${userId}/avatar`, fd);
+          if (avatarRes?.data?.avatar) {
+            userData.profileImage = avatarRes.data.avatar;
+            userData.avatar = avatarRes.data.avatar;
           }
-        }
-        if (!uploaded) {
-          // don't fail the whole registration; show a warning to user
-          setError((prev) => (prev ? prev + ' | ' : '') + (t('avatar_upload_failed') || 'Avatar upload failed; please upload later'));
+        } catch (e) {
+
+
+
+          await new Promise((resolve) => {
+            const dbRequest = indexedDB.open("AvatarDB", 1);
+            dbRequest.onupgradeneeded = (event) => {
+              const db = event.target.result;
+              if (!db.objectStoreNames.contains("images")) {
+                db.createObjectStore("images");
+              }
+            };
+            dbRequest.onsuccess = (event) => {
+              const db = event.target.result;
+              try {
+                const transaction = db.transaction("images", "readwrite");
+                const store = transaction.objectStore("images");
+                const putRequest = store.put(avatarFile, "pendingAvatar");
+
+                putRequest.onsuccess = () => {
+
+                  resolve();
+                };
+                putRequest.onerror = () => resolve();
+              } catch { resolve(); }
+            };
+            dbRequest.onerror = () => resolve();
+          });
         }
       }
 
-      // Navigate to verification page AFTER avatar upload is complete
-      navigate('/verify-code', { state: { email: formData.email } });
+      if (userData) {
+        try {
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('userType', 'both');
+        } catch (e) { }
+      }
+
       setError("");
       setSuccess(t('register_title'));
-      try { localStorage.setItem('userType', 'both'); } catch { }
-      // If no token yet, try automatic login using provided credentials
-      let tokenNow = returnedToken || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
-      if (!tokenNow) {
-        try {
-          // Try email/password first
-          const lr1 = await loginUser({ email: String(formData.email || ''), password: String(formData.password || '') });
-          returnedToken = lr1?.data?.token || lr1?.data?.accessToken || lr1?.data?.authToken;
-          if (returnedToken) {
-            try { localStorage.setItem('token', returnedToken); } catch { }
-            tokenNow = returnedToken;
-          }
-        } catch { }
-      }
-      if (!tokenNow) {
-        try {
-          // Fallback: try username/password
-          const lr2 = await loginUser({ username: String(formData.username || ''), password: String(formData.password || '') });
-          returnedToken = lr2?.data?.token || lr2?.data?.accessToken || lr2?.data?.authToken;
-          if (returnedToken) {
-            try { localStorage.setItem('token', returnedToken); } catch { }
-            tokenNow = returnedToken;
-          }
-        } catch { }
-      }
-      // If authenticated, send user straight to add-product so both buyer/seller can create a listing immediately
-      setTimeout(() => (window.location.href = tokenNow ? "/add-product" : "/login"), 800);
+      navigate('/verify-code', { state: { email: formData.email } });
+
     } catch (err) {
       setSuccess("");
-      // Log detailed error for debugging
       console.error('Register error:', err);
       const resp = err?.response;
       if (resp) {
-        // Extract and display server validation errors
         const srv = resp.data || {};
-        let errorMessage = '';
-
-        // Log the actual message array content for debugging
-
-
-        if (Array.isArray(srv.message)) {
-          // Handle array of validation errors
-          const errorMessages = srv.message.map((m, index) => {
-
-            if (typeof m === 'string') return m;
-            if (typeof m === 'object') return m.msg || m.message || JSON.stringify(m);
-            return String(m);
-          });
-          errorMessage = errorMessages.join(' - ');
-        } else if (typeof srv.message === 'string') {
-          errorMessage = srv.message;
-        } else if (srv.error) {
-          errorMessage = srv.error;
-        } else if (resp.statusText) {
-          errorMessage = resp.statusText;
-        } else {
-          errorMessage = t('register_error');
-        }
-
-
+        let errorMessage = srv.message || srv.error || t('register_error');
+        if (Array.isArray(srv.message)) errorMessage = srv.message.join(' - ');
         setError(errorMessage);
       } else {
         setError(err?.message || t('register_error'));
       }
-
-      console.error(t('register_error_details'), err.response?.data);
     } finally {
       setLoading(false);
     }
-
   };
-
   return (
     <Box
       sx={{
@@ -408,9 +346,9 @@ export default function Register() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // Make background transparent like other pages
+
         backgroundColor: 'transparent',
-        paddingTop: '80px', // إضافة مساحة معتدلة للناف بار
+        paddingTop: '80px',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -430,7 +368,7 @@ export default function Register() {
         }
       }}
     >
-      {/* Interactive Mouse Follower - More subtle */}
+
       <Box
         sx={{
           position: 'absolute',
@@ -447,7 +385,7 @@ export default function Register() {
         }}
       />
 
-      {/* Mouse Trail Effect - More subtle */}
+
       <Box
         sx={{
           position: 'absolute',
@@ -464,7 +402,7 @@ export default function Register() {
         }}
       />
 
-      {/* Floating Particles - More subtle */}
+
       <Box sx={{ position: 'absolute', top: '10%', left: '10%', animation: 'float 6s ease-in-out infinite' }}>
         <Star sx={{ fontSize: 30, color: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)' }} />
       </Box>
@@ -475,7 +413,7 @@ export default function Register() {
         <Star sx={{ fontSize: 28, color: darkMode ? 'rgba(255, 255, 255, 0.09)' : 'rgba(255, 255, 255, 0.18)' }} />
       </Box>
 
-      {/* Additional Floating Elements */}
+
       <Box sx={{ position: 'absolute', top: '30%', right: '10%', animation: 'float 9s ease-in-out infinite 2s' }}>
         <Star sx={{ fontSize: 20, color: darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.12)' }} />
       </Box>
