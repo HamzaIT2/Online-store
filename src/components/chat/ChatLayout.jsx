@@ -4,7 +4,6 @@ import { useSearchParams, useLocation } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindowFixed';
 import { useChatSocket } from '../../hooks/useChatSocket';
-
 export default function ChatLayout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
