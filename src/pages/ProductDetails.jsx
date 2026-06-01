@@ -368,11 +368,11 @@ export default function ProductDetails() {
               {product.description || t('no_description')}
             </Typography>
 
-            <Divider sx={{ mb: 2, borderColor: darkMode ? '#34495e' : '#f0f0f0' }} />
+            <Divider sx={{ mb: 2, borderColor: darkMode ? '#cecece' : '#1f1d1d' }} />
 
-            {/* Options Row: Qty Only */}
-            <Box sx={{ mb: 3 }}>
-              {/* Quantity Stepper */}
+             
+            {/* <Box sx={{ mb: 3 }}>
+           
               <Box>
                 <Typography variant="caption" sx={{
                   color: darkMode ? '#aaa' : '#888',
@@ -401,7 +401,7 @@ export default function ProductDetails() {
                   </IconButton>
                 </Box>
               </Box>
-            </Box>
+            </Box>  */}
 
             {/* Actions */}
             <Stack direction="row" spacing={1.5} alignItems="center">
@@ -410,13 +410,13 @@ export default function ProductDetails() {
                 width: 48,
                 height: 48,
                 borderRadius: '50%',
-                bgcolor: darkMode ? '#34495e' : '#F3F4F6',
+                bgcolor: darkMode ? '#cfcfcf' : '#F3F4F6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: '0.2s',
                 flexShrink: 0,
-                '&:hover': { bgcolor: darkMode ? '#455a73' : '#E5E7EB' }
+                '&:hover': { bgcolor: darkMode ? '#dddddd' : '#E5E7EB' }
               }}>
                 <FavoriteToggle productId={product.productId || product.id} />
               </Box>
@@ -441,7 +441,7 @@ export default function ProductDetails() {
                   } catch (_) { navigate('/chat'); }
                 }}
                 sx={{
-                  bgcolor: darkMode ? '#34495e' : '#FFD700',
+                  bgcolor: darkMode ? '#b8b8b8' : '#FFD700',
                   color: darkMode ? '#fff' : '#000',
                   fontWeight: 'bold',
                   borderRadius: '24px',
