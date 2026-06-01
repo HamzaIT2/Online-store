@@ -6,7 +6,7 @@ import {
 } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import CampaignIcon from '@mui/icons-material/Campaign'; // 👈 استيراد الأيقونة
+import CampaignIcon from '@mui/icons-material/Campaign';
 import axiosInstance from "../api/axiosInstance";
 import ProductCard from "../components/ProductCard";
 import ProductSkeleton from "../components/ProductSkeleton";
@@ -33,8 +33,8 @@ export default function MyProducts() {
 
 
   const handleOpenOffer = (p) => {
-    // للتأكد في الكونسول
-    setSelectedProduct(p); // ✅ نخزن هذا المنتج تحديداً
+
+    setSelectedProduct(p);
     setShowOfferDialog(true);
   }
 
@@ -86,9 +86,9 @@ export default function MyProducts() {
       {!items || items.length === 0 ? (
         <EmptyState
           type="products"
-          title="لا توجد منتجات لك"
-          description="ابدأ بإضافة منتجاتك الأولى واعرضها للآلاف من المشترين المحتملين"
-          actionText="إضافة منتج"
+          title={t('no_products')}
+          description={t('no_products_description')}
+          actionText={t('add_product')}
           actionLink="/add-product"
         />
       ) : (
@@ -100,46 +100,46 @@ export default function MyProducts() {
                   <ProductCard product={p} />
                 </CardContent>
 
-                {/* 👇 أزرار التحكم بالمنتج */}
+
                 <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
                   <div>
-                    <Tooltip title="تعديل">
+                    <Tooltip title={t('edit')}>
                       <IconButton onClick={() => navigate(`/edit-product/${p.productId || p.id || p._id}`)}>
                         <EditIcon color="primary" />
                       </IconButton>
                     </Tooltip>
 
-                    <Tooltip title="حذف">
+                    <Tooltip title={t('delete')}>
                       <IconButton onClick={() => { setToDelete(p); setConfirmOpen(true); }}>
                         <DeleteIcon color="error" />
                       </IconButton>
                     </Tooltip>
                   </div>
 
-                  {/* 👇 زر الترويج هنا مكانه الصحيح */}
+
                   <Button
                     variant="contained"
                     color="warning"
                     size="small"
                     startIcon={<CampaignIcon />}
-                    onClick={() => setPromoteItem(p)} // تحديد المنتج المراد ترويجه
+                    onClick={() => setPromoteItem(p)}
                     sx={{ borderRadius: 4 }}
                   >
-                    VIP ترويج
+                    {t('promote')}
                   </Button>
                   <Button onClick={() => handleOpenOffer(p)}>
-                    إنشاء عرض
+                    {t('create_offer')}
                   </Button>
 
                   <MakeOfferDialog
                     open={showOfferDialog}
                     onClose={() => {
                       setShowOfferDialog(false);
-                      setSelectedProduct(null); // 
+                      setSelectedProduct(null);
                     }}
-                    product={selectedProduct} // 
+                    product={selectedProduct}
                     onSuccess={() => {
-                      window.location.reload(); // 
+                      window.location.reload();
                       alert("!");
                     }}
                   />
@@ -150,7 +150,7 @@ export default function MyProducts() {
         </Grid>
       )}
 
-      {/* Dialog: Delete Confirmation */}
+
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <DialogTitle>{t('confirm_delete') || 'Confirm delete'}</DialogTitle>
         <DialogContent>
@@ -178,7 +178,7 @@ export default function MyProducts() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog: Promote Modal (VIP) */}
+
       {promoteItem && (
         <PromoteModal
           open={Boolean(promoteItem)}
