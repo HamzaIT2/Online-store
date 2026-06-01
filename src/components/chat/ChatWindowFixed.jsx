@@ -23,6 +23,8 @@ import {
   Info as InfoIcon,
   InsertDriveFile as FileIcon
 } from '@mui/icons-material';
+import {t} from '../../i18n';
+
 
 const formatTime = (timestamp) => {
   if (!timestamp) return '';
@@ -160,7 +162,7 @@ export default function ChatWindow({
         }}
       >
         <Typography variant="h6" color="text.secondary">
-          اختر محادثة لبدء الدردشة
+          {t('chat_selectConversation')}
         </Typography>
       </Box>
     );
@@ -209,13 +211,13 @@ export default function ChatWindow({
             {getConversationName(selectedChat)}
           </Typography>
           <Typography variant="caption" color={isUserOnline(selectedChat) ? 'success.main' : 'text.secondary'}>
-            {isUserOnline(selectedChat) ? 'متصل الآن' : 'غير متصل'}
+            {isUserOnline(selectedChat) ? t('chat.online') : t('chat.offline')}
           </Typography>
         </Box>
-        <IconButton color="primary" onClick={() => setSnackbar({ open: true, message: 'Calling feature coming soon...' })}>
+        <IconButton color="primary" onClick={() => setSnackbar({ open: true, message: t('chat.callingComingSoon') })}>
           <PhoneIcon />
         </IconButton>
-        <IconButton color="primary" onClick={() => setSnackbar({ open: true, message: 'Video call feature coming soon...' })}>
+        <IconButton color="primary" onClick={() => setSnackbar({ open: true, message: t('chat.videoCallComingSoon') })}>
           <VideocamIcon />
         </IconButton>
         <IconButton color="primary"><InfoIcon /></IconButton>
@@ -411,7 +413,7 @@ export default function ChatWindow({
           </IconButton>
           <InputBase
             fullWidth
-            placeholder="اكتب رسالتك..."
+            placeholder={t('chat_placeholder')}
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyPress={handleKeyPress}
