@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import MessageIcon from '@mui/icons-material/Message';
 import CountdownTimer from "./CountdownTimer";
-
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 // Get current language
 const getCurrentLang = () => {
   try {
@@ -18,28 +18,81 @@ const getCurrentLang = () => {
   }
 };
 
-// Province fallback data with multilingual support
-const PROVINCE_FALLBACKS = {
-  'p-baghdad': { ar: 'بغداد', en: 'Baghdad' },
-  'p-basra': { ar: 'البصرة', en: 'Basra' },
-  'p-ninawa': { ar: 'نينوى', en: 'Nineveh' },
-  'p-erbil': { ar: 'أربيل', en: 'Erbil' },
-  'p-sulaymaniyah': { ar: 'السليمانية', en: 'Sulaymaniyah' },
-  'p-dohuk': { ar: 'دهوك', en: 'Dohuk' },
-  'p-karbala': { ar: 'كربلاء', en: 'Karbala' },
-  'p-najaf': { ar: 'النجف', en: 'Najaf' },
-  'p-babil': { ar: 'بابل', en: 'Babil' },
-  'p-wasit': { ar: 'واسط', en: 'Wasit' },
-  'p-dhiqar': { ar: 'ذي قار', en: 'Dhi Qar' },
-  'p-maysan': { ar: 'ميسان', en: 'Maysan' },
-  'p-diwaniya': { ar: 'الديوانية', en: 'Diwaniya' },
-  'p-kirkuk': { ar: 'كركوك', en: 'Kirkuk' },
-  'p-diyala': { ar: 'ديالى', en: 'Diyala' },
-  'p-anbar': { ar: 'الأنبار', en: 'Anbar' },
-  'p-salah': { ar: 'صلاح الدين', en: 'Salah ad Din' },
-  'p-muthanna': { ar: 'المثنى', en: 'Muthanna' },
-};
 
+const PROVINCE_FALLBACKS = {
+  '73': { ar: 'بغداد', en: 'Baghdad' },
+  '74': { ar: 'البصرة', en: 'Basra' },
+  '75': { ar: 'النجف', en: 'Najaf' },
+  '76': { ar: 'كربلاء', en: 'Karbala' },
+  '77': { ar: 'أربيل', en: 'Erbil' },
+  '78': { ar: 'السليمانية', en: 'Sulaymaniyah' },
+  '79': { ar: 'دهوك', en: 'Duhok' },
+  '80': { ar: 'نينوى', en: 'Nineveh' },
+  '81': { ar: 'كركوك', en: 'Kirkuk' },
+  '82': { ar: 'ديالى', en: 'Diyala' },
+  '83': { ar: 'الأنبار', en: 'Anbar' },
+  '84': { ar: 'بابل', en: 'Babil' },
+  '85': { ar: 'واسط', en: 'Wasit' },
+  '86': { ar: 'ميسان', en: 'Maysan' },
+  '87': { ar: 'ذي قار', en: 'Dhi Qar' },
+  '88': { ar: 'المثنى', en: 'Al-Muthanna' },
+  '89': { ar: 'القادسية', en: 'Al-Qadisiyah' },
+  '90': { ar: 'صلاح الدين', en: 'Salah ad Din' },
+};
+const CITY_FALLBACKS = {
+  '206': { ar: 'بغداد', en: 'Baghdad' },
+  '207': { ar: 'الكاظمية', en: 'Kadhimiya' },
+  '208': { ar: 'مدينة الصدر', en: 'Sadr City' },
+  '209': { ar: 'البصرة', en: 'Basra' },
+  '210': { ar: 'الزبير', en: 'Al-Zubair' },
+  '211': { ar: 'أم قصر', en: 'Umm Qasr' },
+  '212': { ar: 'النجف', en: 'Najaf' },
+  '213': { ar: 'الكوفة', en: 'Kufa' },
+  '214': { ar: 'كربلاء', en: 'Karbala' },
+  '215': { ar: 'الهندية', en: 'Al-Hindiya' },
+  '216': { ar: 'أربيل', en: 'Erbil' },
+  '217': { ar: 'شقلاوة', en: 'Shaqlawa' },
+  '218': { ar: 'سوران', en: 'Soran' },
+  '219': { ar: 'السليمانية', en: 'Sulaymaniyah' },
+  '220': { ar: 'جمجمال', en: 'Chamchamal' },
+  '221': { ar: 'رانية', en: 'Rania' },
+  '222': { ar: 'دهوك', en: 'Duhok' },
+  '223': { ar: 'زاخو', en: 'Zakho' },
+  '224': { ar: 'عامدية', en: 'Amedi' },
+  '225': { ar: 'الموصل', en: 'Mosul' },
+  '226': { ar: 'تلعفر', en: 'Tal Afar' },
+  '227': { ar: 'سنجار', en: 'Sinjar' },
+  '228': { ar: 'كركوك', en: 'Kirkuk' },
+  '229': { ar: 'داقوق', en: 'Daquq' },
+  '230': { ar: 'الحويجة', en: 'Hawija' },
+  '231': { ar: 'بعقوبة', en: 'Baqubah' },
+  '232': { ar: 'خالص', en: 'Khalis' },
+  '233': { ar: 'المقدادية', en: 'Muqdadiyah' },
+  '234': { ar: 'الرمادي', en: 'Ramadi' },
+  '235': { ar: 'الفلوجة', en: 'Fallujah' },
+  '236': { ar: 'حديثة', en: 'Haditha' },
+  '237': { ar: 'الحلة', en: 'Hilla' },
+  '238': { ar: 'المحاويل', en: 'Mahawil' },
+  '239': { ar: 'الكوت', en: 'Kut' },
+  '240': { ar: 'الحي', en: 'Al-Hayy' },
+  '241': { ar: 'العزيزية', en: 'Al-Aziziyah' },
+  '242': { ar: 'العمارة', en: 'Amarah' },
+  '243': { ar: 'علي الغربي', en: 'Ali Al-Gharbi' },
+  '244': { ar: 'مجر الكبير', en: 'Majar Al-Kabir' },
+  '245': { ar: 'الناصرية', en: 'Nasiriyah' },
+  '246': { ar: 'الرفاعي', en: 'Al-Rifai' },
+  '247': { ar: 'الشطرة', en: 'Al-Shatra' },
+  '248': { ar: 'السماوة', en: 'Samawah' },
+  '249': { ar: 'الرميثة', en: 'Al-Rumaitha' },
+  '250': { ar: 'الخضر', en: 'Al-Khidir' },
+  '251': { ar: 'الديوانية', en: 'Diwaniyah' },
+  '252': { ar: 'حمزة', en: 'Hamza' },
+  '253': { ar: 'عفك', en: 'Afak' },
+  '254': { ar: 'سامراء', en: 'Samarra' },
+  '255': { ar: 'تكريت', en: 'Tikrit' },
+  '256': { ar: 'بيجي', en: 'Baiji' },
+  '257': { ar: 'الشرقاط', en: 'Al-Shirqat' },
+};
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -173,39 +226,79 @@ export default function ProductCard({ product }) {
   };
 
   // Get province name with multilingual support
-  const getProvinceName = () => {
+  // const getProvinceName = () => {
+  //   const currentLang = getCurrentLang();
+
+  //   // Try to get province name from product data
+  //   let provinceId = product?.provinceId || product?.province?.provinceId || product?.province?.id;
+  //   let provinceName = '';
+
+  //   // If we have province data with multilingual names
+  //   if (product?.province) {
+  //     provinceName = currentLang === 'ar' ?
+  //       (product.province.nameAr || product.province.name || product.province.nameEn) :
+  //       (product.province.nameEn || product.province.name || product.province.nameAr);
+  //   }
+
+  //   // If no province name but we have provinceId, use fallback
+  //   if (!provinceName && provinceId) {
+  //     const key = String(provinceId);
+  //     provinceName = PROVINCE_FALLBACKS[key]?.[currentLang] || PROVINCE_FALLBACKS[key]?.ar || '';
+  //   }
+
+  //   // Final fallback: try to extract from any province field
+  //   if (!provinceName && product?.province) {
+  //     provinceName = currentLang === 'ar' ?
+  //       (product.province.nameAr || product.province.name) :
+  //       (product.province.nameEn || product.province.name);
+  //   }
+
+  //   return provinceName;
+  // };
+  const getLocationInfo = () => {
     const currentLang = getCurrentLang();
 
-    // Try to get province name from product data
-    let provinceId = product?.provinceId || product?.province?.provinceId || product?.province?.id;
-    let provinceName = '';
+    // استخراج المعرفات
+    const provId = product?.provinceId || product?.province_id;
+    const ctyId = product?.cityId || product?.city_id;
+    const addressDetails = product?.address || product?.address_details;
 
-    // If we have province data with multilingual names
+    // 1. استخراج المحافظة
+    let provinceName = '';
     if (product?.province) {
       provinceName = currentLang === 'ar' ?
-        (product.province.nameAr || product.province.name || product.province.nameEn) :
-        (product.province.nameEn || product.province.name || product.province.nameAr);
+        (product.province.nameAr || product.province.name_ar || product.province.name) :
+        (product.province.nameEn || product.province.name_en || product.province.name);
+    } else if (provId) {
+      provinceName = PROVINCE_FALLBACKS[String(provId)]?.[currentLang] || PROVINCE_FALLBACKS[String(provId)]?.ar;
     }
 
-    // If no province name but we have provinceId, use fallback
-    if (!provinceName && provinceId) {
-      const key = String(provinceId);
-      provinceName = PROVINCE_FALLBACKS[key]?.[currentLang] || PROVINCE_FALLBACKS[key]?.ar || '';
+    // 2. استخراج المدينة (من الكائن أو من القاموس الجديد)
+    let cityName = '';
+    if (product?.city) {
+      cityName = currentLang === 'ar' ?
+        (product.city.nameAr || product.city.name_ar || product.city.name) :
+        (product.city.nameEn || product.city.name_en || product.city.name);
+    } else if (ctyId) {
+      cityName = CITY_FALLBACKS[String(ctyId)]?.[currentLang] || CITY_FALLBACKS[String(ctyId)]?.ar;
     }
 
-    // Final fallback: try to extract from any province field
-    if (!provinceName && product?.province) {
-      provinceName = currentLang === 'ar' ?
-        (product.province.nameAr || product.province.name) :
-        (product.province.nameEn || product.province.name);
+    
+    let finalLocation = [];
+    if (provinceName) finalLocation.push(provinceName);
+
+    
+    if (cityName && cityName !== provinceName) {
+      finalLocation.push(cityName);
     }
 
-    return provinceName;
+    if (addressDetails) finalLocation.push(addressDetails);
+
+    return finalLocation.length > 0 ? finalLocation.join(' - ') : null;
   };
 
-  const provinceName = getProvinceName();
+  const locationText = getLocationInfo();
   const conditionLabel = t(conditionKeyMap[product?.condition] || '');
-
   return (
     <>
       <Card
@@ -303,16 +396,20 @@ export default function ProductCard({ product }) {
             {product?.description?.length > 150 ? product?.description?.slice(0, 150) + "..." : product?.description}
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {provinceName} {provinceName && conditionLabel ? "-" : ""} {conditionLabel}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, mb: 1, gap: 0.5 }}>
+            <LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+            <Typography variant="caption" color="text.secondary" fontWeight="bold">
+              {locationText || t('unknown_location') || 'موقع غير محدد'}
+              {conditionLabel ? ` • ${conditionLabel}` : ""}
+            </Typography>
+          </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="h6" color="primary" fontWeight="bold">
+              <Typography variant="h6" color="text.primary" fontWeight="bold">
                 {product?.price?.toLocaleString()} {t('currency_iqd')}
               </Typography>
-              <Typography variant="caption" color="text.secondary">{t('seller_rating')}</Typography>
+              <Typography variant="caption" color="text.primary">{t('seller_rating')}</Typography>
               <Rating value={Number(product?.ratingAverage ?? product?.avgRating ?? product?.rating ?? 0)} precision={0.5} readOnly size="small" />
               {Boolean(product?.ratingCount) && (
                 <Typography variant="caption" color="text.secondary">({product?.ratingCount})</Typography>
@@ -330,7 +427,7 @@ export default function ProductCard({ product }) {
 
             <Button
               variant="outlined"
-              color="primary"
+              color=""
               onClick={(e) => { e.stopPropagation(); handleMessageSeller(e); }}
               sx={{ minWidth: 44 }}
             >
@@ -338,7 +435,7 @@ export default function ProductCard({ product }) {
             </Button>
             <Button
               variant="outlined"
-              color="primary"
+              color=""
               onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}>
               <AddShoppingCartIcon />
             </Button>
