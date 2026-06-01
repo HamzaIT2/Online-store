@@ -61,7 +61,7 @@ export default function Home() {
             const origin = new URL(baseURL).origin;
             return origin;
           } catch {
-            return "http://localhost:3000"; // fallback
+            return "http://localhost:3000";
           }
         })();
 
@@ -92,7 +92,7 @@ export default function Home() {
       setHeroSlides(formattedSlides);
 
     } catch (error) {
-      // Handle error silently or show user-friendly message
+
     }
   };
 
@@ -100,16 +100,17 @@ export default function Home() {
     setFilters(newFilters);
   };
 
-  const loadProducts = async () => {
+
+  const loadProducts = async (currentSearchTerm, currentFilters) => {
     setLoading(true);
     setError("");
     try {
-      // Use getAllProducts with search and filter parameters
-      const res = await getAllProducts(filters, searchTerm);
 
-      // Extract products array from paginated response
-      setProducts(res?.data || []);
+      const res = await getAllProducts(currentFilters, currentSearchTerm);
+      const rawData = res?.data !== undefined ? res.data : res;
+      const productsArray = Array.isArray(rawData) ? rawData : (rawData?.data || []);
 
+      setProducts(productsArray);
     } catch (err) {
       setError(t('error_loading_product'));
     } finally {
@@ -121,64 +122,37 @@ export default function Home() {
     loadingHeroSlides();
   }, []);
 
+  // 2. المراقب الوحيد: يقرأ الرابط، يجهّز الفلاتر، ويستدعي loadProducts فوراً
   useEffect(() => {
-    // Read all filter parameters from URL and prefill filters
     const params = new URLSearchParams(location.search);
     const categoryId = params.get('categoryId');
     const provinceId = params.get('provinceId');
     const condition = params.get('condition');
     const minPrice = params.get('minPrice');
     const maxPrice = params.get('maxPrice');
-    const q = params.get('q');
+    const q = params.get('search');
 
-    // Update filters state with all URL parameters
-    setFilters((prevFilters) => {
-      const newFilters = { ...prevFilters };
+    // تجهيز الفلاتر المحدثة بناءً على الرابط
+    const activeFilters = {
+      category: (categoryId && categoryId !== 'undefined' && categoryId !== 'null') ? categoryId : "",
+      provinceId: provinceId ? Number(provinceId) : null,
+      condition: condition || null,
+      priceRange: (minPrice && maxPrice) ? [Number(minPrice), Number(maxPrice)] : [0, 2000000],
+    };
 
-      // Category
-      if (categoryId && categoryId !== 'undefined' && categoryId !== 'null') {
-        newFilters.category = categoryId;
-        setSelectedCategoryId(categoryId);
-      } else {
-        newFilters.category = '';
-        setSelectedCategoryId(null);
-      }
+    const activeSearch = q || "";
 
-      // Province - use provinceId to match FilterDrawer
-      if (provinceId) {
-        newFilters.provinceId = Number(provinceId);
-      } else if (prevFilters.provinceId !== null) {
-        newFilters.provinceId = null;
-      }
+    // 🎯 استدعاء دالة الجلب مباشرة بالقيم المستخرجة، مما يمنع أي استعلامات مزدوجة
+    loadProducts(activeSearch, activeFilters);
 
-      // Condition - use null to match FilterDrawer
-      if (condition) {
-        newFilters.condition = condition;
-      } else if (prevFilters.condition !== null) {
-        newFilters.condition = null;
-      }
+    // مزامنة الـ States المحلية لتناسق واجهة المستخدم (FilterDrawer، الخ)
+    setSearchTerm(activeSearch);
+    setFilters(activeFilters);
+    setSelectedCategoryId(activeFilters.category || null);
 
-      // Price Range
-      if (minPrice && maxPrice) {
-        newFilters.priceRange = [Number(minPrice), Number(maxPrice)];
-      } else if (prevFilters.priceRange && (prevFilters.priceRange[0] !== 0 || prevFilters.priceRange[1] !== 2000000)) {
-        newFilters.priceRange = [0, 2000000];
-      }
+  }, [location.search]); // يعتمد فقط على تغير الرابط
 
-      return newFilters;
-    });
-
-    // Update search term from URL
-    if (q) {
-      setSearchTerm(q);
-    } else {
-      setSearchTerm('');
-    }
-  }, [location.search]);
-
-  useEffect(() => {
-    loadProducts();
-  }, [selectedCategoryId, filters, searchTerm]);
+  // ❌ تأكد من حذف الـ useEffect القديم الذي كان يعتمد على [selectedCategoryId, filters, searchTerm]
 
   useEffect(() => {
     const handleScroll = () => {
@@ -207,7 +181,7 @@ export default function Home() {
     <Container
       maxWidth={false}
       sx={{
-        mt: 8.1,
+        mt: 10,
         width: {
           xs: "100%",
           sm: "100%",
