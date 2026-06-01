@@ -119,7 +119,7 @@ export default function PromoteModal({ open, onClose, productId }) {
 
       <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
         <Button onClick={onClose} color="inherit" sx={{ mx: 1 }}>
-          إلغاء
+          {t('cancel')}
         </Button>
         <Button
           variant="contained"
