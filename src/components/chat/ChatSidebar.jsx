@@ -21,6 +21,8 @@ import {
   MoreVert as MoreVertIcon
 } from '@mui/icons-material';
 
+
+import {t} from '../../i18n';
 export default function ChatSidebar({
   conversations,
   loading,
@@ -31,6 +33,8 @@ export default function ChatSidebar({
   onlineUsers = []
 }) {
   const theme = useTheme();
+  
+  
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredConversations = conversations.filter(conv =>
@@ -52,7 +56,7 @@ export default function ChatSidebar({
   };
 
   const formatMessage = (message) => {
-    if (!message) return 'لا توجد رسائل';
+    if (!message) return t('noMessages');
     return message.length > 35 ? message.substring(0, 35) + '...' : message;
   };
 
@@ -70,7 +74,7 @@ export default function ChatSidebar({
         hour12: true
       });
     } else if (diffInHours < 48) {
-      return 'أمس';
+      return t('yesterday');
     } else {
       return date.toLocaleDateString('ar', {
         day: 'numeric',
@@ -80,7 +84,7 @@ export default function ChatSidebar({
   };
 
   const getConversationName = (conv) => {
-    return conv.name || conv.otherUserName || conv.title || `محادثة #${conv.id}`;
+    return conv.name || conv.otherUserName || conv.title || `${t('chat')} #${conv.id}`;
   };
 
   const getConversationAvatar = (conv) => {
@@ -131,7 +135,7 @@ export default function ChatSidebar({
       >
         <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            الرسائل
+            {t('messages')}
           </Typography>
         </Box>
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
@@ -157,7 +161,7 @@ export default function ChatSidebar({
       {/* Sidebar Header */}
       <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-          الرسائل
+          {t('messages')}
         </Typography>
 
         {/* Search Bar */}
@@ -175,7 +179,7 @@ export default function ChatSidebar({
           </IconButton>
           <InputBase
             sx={{ ml: 1, flex: 1 }}
-            placeholder="البحث عن محادثة..."
+            placeholder={t('searchConversation')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
