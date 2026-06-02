@@ -496,66 +496,6 @@ export default function Register() {
             </Box>
 
             <Box component="form" onSubmit={handleSubmit}>
-              {/* Avatar Section */}
-              <Slide direction="right" in timeout={600}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3, gap: 2 }}>
-                  <Tooltip title={t('register_avatar') || 'صورة البروفايل'}>
-                    <IconButton
-                      onClick={() => document.getElementById('register-avatar-input')?.click()}
-                      sx={{
-                        p: 1,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                          boxShadow: darkMode
-                            ? '0 4px 20px rgba(102, 126, 234, 0.3)'
-                            : '0 4px 20px rgba(102, 126, 234, 0.2)',
-                        }
-                      }}
-                    >
-                      <Avatar
-                        src={avatarPreview || undefined}
-                        sx={{
-                          width: 80,
-                          height: 80,
-                          border: darkMode ? '2px solid rgba(102, 126, 234, 0.3)' : '2px solid rgba(102, 126, 234, 0.2)'
-                        }}
-                      >
-                        {String(formData.fullName || formData.username || 'U').charAt(0)}
-                      </Avatar>
-                    </IconButton>
-                  </Tooltip>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ color: darkMode ? '#f5f5f5' : '#666', mb: 1 }}>
-                      {t('register_avatar') || 'اختر صورة البروفايل'}
-                    </Typography>
-                    <input
-                      id="register-avatar-input"
-                      hidden
-                      accept="image/*"
-                      type="file"
-                      onChange={handleFileChange}
-                    />
-                    {avatarPreview && (
-                      <Button
-                        size="small"
-                        color="secondary"
-                        onClick={handleRemoveAvatar}
-                        sx={{
-                          fontSize: '0.75rem',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                          }
-                        }}
-                      >
-                        {t('remove') || 'إلغاء'}
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              </Slide>
-
               {/* Username Field */}
               <Slide direction="left" in timeout={700}>
                 <TextField
