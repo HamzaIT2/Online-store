@@ -106,8 +106,8 @@ export default function Categories() {
     if (subName.includes('دراجات') || subName.includes('Motorcycles')) return 'subcategories/bicke.jpg';
     if (subName.includes('أدوات موسيقية') || subName.includes('Musical Instruments')) return 'subcategories/music.jpg';
     if (subName.includes('رياضة ولياقة') || subName.includes('Sports and Fitness')) return 'subcategories/jem.jpg';
-    if (subName.includes('ألعاب وهدايا') || subName.includes('Toys and Gifts' )) return 'subcategories/game.jpg';
-    if (subName.includes('كتب ومستلزمات دراسية') || subName.includes('Books and Stationery' )) return 'subcategories/book.jpg';
+    if (subName.includes('ألعاب وهدايا') || subName.includes('Toys and Gifts')) return 'subcategories/game.jpg';
+    if (subName.includes('كتب ومستلزمات دراسية') || subName.includes('Books and Stationery')) return 'subcategories/book.jpg';
     if (subName.includes('أجهزة عناية') || subName.includes('Personal Care')) return 'subcategories/dvicepersonal.jpg';
     if (subName.includes('عطور') || subName.includes('Perfumes')) return 'subcategories/ator.jpg';
     if (subName.includes('مستحضرات تجميل') || subName.includes('Beauty Products')) return 'subcategories/tjmel.jpg';
@@ -142,6 +142,7 @@ export default function Categories() {
               id: sub.id || sub.category_id,
               ar: sub.name_ar || sub.name,
               en: sub.name || sub.name_ar,
+              icon: sub.icon || sub.image || null,
             })) : []
           }));
 
@@ -209,21 +210,32 @@ export default function Categories() {
                         <CardContent sx={{ p: 0, m: 2, textAlign: 'center' }}>
                           <CardMedia
                             component="img"
-                            image={getSubcategoryImage(sub.ar || sub.en)}
-                            alt={getCurrentLang() === 'ar' ? sub.ar : sub.en}
+                            // 1. محاولة تحميل الصورة من السيرفر، وإلا التراجع فوراً للدالة الافتراضية
+                            image={sub.icon ? `http://localhost:3000${sub.icon}` : getSubcategoryImage(sub.name_ar || sub.name || sub.ar || sub.en)}
+
+                            alt={getCurrentLang() === 'ar' ? (sub.name_ar || sub.ar) : (sub.name || sub.en)}
                             sx={{ width: '100%', height: '120px', objectFit: 'cover', mb: 2, borderRadius: 1 }}
+
+                            // 🚨 2. خط الدفاع الأخير: إذا فشل المتصفح في جلب الصورة من السيرفر (خطأ 404)، يتم تحويله للصورة الافتراضية فوراً
+                            onError={(e) => {
+                              e.target.src = getSubcategoryImage(sub.name_ar || sub.name || sub.ar || sub.en);
+                            }}
                           />
+
                           <Typography
                             variant="h6"
                             sx={{
                               fontWeight: 700,
                               fontSize: '1rem',
-                              color: 'primary',
+                              color: 'primary.main', // تم تعديلها إلى primary.main لضمان ظهور اللون في MUI
                               textAlign: 'center',
                               lineHeight: 1.3,
                             }}
                           >
-                            {getCurrentLang() === 'ar' ? sub.ar : sub.en}
+                            {/* 3. عرض الاسم وضمان عدم وجود قيم فارغة */}
+                            {getCurrentLang() === 'ar'
+                              ? (sub.name_ar || sub.ar || sub.name || 'بدون اسم')
+                              : (sub.name || sub.en || sub.name_ar || 'Unnamed')}
                           </Typography>
                         </CardContent>
                       </CardActionArea>
