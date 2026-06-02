@@ -1,12 +1,10 @@
-
-
 import React, { useState, useEffect } from "react";
 import {
   Container, Grid, Paper, Typography, Box, Card, CardContent,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, IconButton, TextField, Alert, Snackbar, Fade, Zoom, Slide,
   Divider, useTheme as useMuiTheme, CircularProgress, Chip,
-  FormControl, InputLabel, Select, MenuItem
+  FormControl, InputLabel, Select, MenuItem, Avatar
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PeopleIcon from "@mui/icons-material/People";
@@ -16,6 +14,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { useTheme } from "../context/ThemeContext";
 import axiosInstance from "../api/axiosInstance";
 import { t } from "../i18n";
+
 export default function AdminDashboard() {
   const { darkMode } = useTheme();
   const muiTheme = useMuiTheme();
@@ -34,6 +33,12 @@ export default function AdminDashboard() {
   const [newSubCatNameAr, setNewSubCatNameAr] = useState("");
   const [selectedParentCat, setSelectedParentCat] = useState("");
 
+  // الحالات الجديدة لرفع ومعاينة الصور بحجم كبير
+  const [mainCatImage, setMainCatImage] = useState(null);
+  const [mainCatPreview, setMainCatPreview] = useState("");
+  const [subCatImage, setSubCatImage] = useState(null);
+  const [subCatPreview, setSubCatPreview] = useState("");
+
   const [notification, setNotification] = useState({ open: false, message: "", severity: "success" });
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +49,7 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 1. جلب الأقسام من السيرفر
+      //-------------------------------------------------------------------------------- جلب الأقسام من السيرفر ---------------------------------------------------------------------------------
       try {
         const catRes = await axiosInstance.get("/categories");
         const categoriesData = catRes.data || catRes || [];
@@ -54,7 +59,7 @@ export default function AdminDashboard() {
         setCategories([]);
       }
 
-      // 2. جلب المستخدمين
+      // ---------------------------------------------------------------------------------جلب المستخدمين ---------------------------------------------------------------------------------
       try {
         const usersRes = await axiosInstance.get("/users/admin/all?page=1&limit=100");
         let usersData = [];
@@ -88,7 +93,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ➕ دالة إضافة قسم رئيسي (بدون parentId)
+ 
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCatName || !newCatNameAr) {
@@ -96,23 +101,34 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      await axiosInstance.post("/categories", {
-        name: newCatName,
-        nameAr: newCatNameAr,
-        description: catDescription || "قسم رئيسي جديد",
-        parentId: null
+      const formData = new FormData();
+      formData.append("name", newCatName);
+      formData.append("nameAr", newCatNameAr);
+      formData.append("description", catDescription || "قسم رئيسي جديد");
+      
+      if (mainCatImage) {
+        formData.append("image", mainCatImage);
+      }
+
+      await axiosInstance.post("/categories", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
+
       showNotify("تم إضافة القسم الرئيسي بنجاح! 🎉");
       fetchDashboardData();
+      
+      // تصفير الحقول والصور
       setNewCatName("");
       setNewCatNameAr("");
       setCatDescription("");
+      setMainCatImage(null);
+      setMainCatPreview("");
     } catch (error) {
       showNotify(error.response?.data?.message || "حدث خطأ أثناء عمل القسم الرئيسي", "error");
     }
   };
 
-  // 🎯 دالة إضافة القسم الفرعي المتوافقة مع الباك اند
+ 
   const handleAddSubCategory = async (e) => {
     e.preventDefault();
     if (!newSubCatName || !newSubCatNameAr || !selectedParentCat) {
@@ -120,24 +136,38 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      await axiosInstance.post("/categories", {
-        name: newSubCatName,
-        nameAr: newSubCatNameAr,
-        parentId: Number(selectedParentCat),
-        description: "قسم فرعي تابع"
+      const formData = new FormData();
+      formData.append("name", newSubCatName);
+      formData.append("nameAr", newSubCatNameAr);
+      formData.append("parentId", Number(selectedParentCat));
+      formData.append("description", "قسم فرعي تابع");
+      
+      if (subCatImage) {
+        formData.append("image", subCatImage);
+      }
+
+      await axiosInstance.post("/categories", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       showNotify("تم إضافة القسم الفرعي بنجاح وربطه بالرئيسي! 🎉");
       fetchDashboardData();
+      
+      // ---------------------------------------------------------------------------------تصفير الحقول والصور ---------------------------------------------------------------------------------
+
       setNewSubCatName("");
       setNewSubCatNameAr("");
       setSelectedParentCat("");
+      setSubCatImage(null);
+      setSubCatPreview("");
     } catch (error) {
       showNotify(error.response?.data?.message || "فشلت إضافة القسم الفرعي", "error");
     }
   };
 
-  // دالة حذف أي قسم (سواء رئيسي أو فرعي)
+  //---------------------------------------------------------------------------------------- دالة حذف أي قسم (سواء رئيسي أو فرعي) ----------------------------------------------------------------------------------
+
+
   const handleDeleteCategory = async (id) => {
     if (!window.confirm(t("confirm_delete_category"))) return;
     try {
@@ -160,7 +190,9 @@ export default function AdminDashboard() {
       }}
     >
       <Container maxWidth="lg">
-        {/* الهيدر */}
+        {/*---------------------------------------------------------------------------------------------- الهيدر ----------------------------------------------------------------------------------*/}
+
+
         <Slide direction="down" in timeout={600}>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={4} flexWrap="wrap" gap={2}>
             <Box display="flex" alignItems="center" gap={2}>
@@ -185,7 +217,8 @@ export default function AdminDashboard() {
           </Box>
         </Slide>
 
-        {/* كروت الإحصائيات */}
+        {/* ----------------------------------------------------------------------------------------كروت الإحصائيات ---------------------------------------------------------------------------------*/}
+
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} sm={6}>
             <Card sx={{ background: "linear-gradient(135deg, #0f2b66 0%, #1a3a7a 100%)", color: "white", borderRadius: 4 }}>
@@ -212,7 +245,9 @@ export default function AdminDashboard() {
         </Grid>
 
         <Grid container spacing={4}>
-          {/* جدول المستخدمين */}
+
+          {/* --------------------------------------------------------------------------------------جدول المستخدمين ------------------------------------------------------------------------------*/}
+
           <Grid item xs={12} md={4}>
             <Fade in timeout={900}>
               <Paper sx={{ p: 3, borderRadius: 4, background: darkMode ? "rgba(15, 26, 48, 0.95)" : "#ffffff" }}>
@@ -251,33 +286,87 @@ export default function AdminDashboard() {
             </Fade>
           </Grid>
 
-          {/* قسم الأقسام */}
+        
           <Grid item xs={12} md={8}>
 
             {/* مربعات الإضافة المتوازية */}
             <Grid container spacing={2} mb={4}>
-              {/* نموذج إضافة قسم رئيسي */}
+
+              {/*----------------------------------------------------------------------------------- نموذج إضافة قسم رئيسي ------------------------------------------------------------------------------------*/}
+
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 3, borderRadius: 4, height: '100%', background: darkMode ? "rgba(15, 26, 48, 0.95)" : "#ffffff" }}>
-                  <Typography variant="subtitle1" fontWeight="bold" mb={2} color="primary">➕ {t("create_main_category")}</Typography>
-                  <Box component="form" onSubmit={handleAddCategory} display="flex" flexDirection="column" gap={2}>
+                <Paper sx={{ p: 3, borderRadius: 4, height: '100%', background: darkMode ? "rgba(67, 65, 97, 0.95)" : "#ffffff" }}>
+                  <Typography variant="subtitle1" fontWeight="bold" mb={2} color="info">➕ {t("create_main_category")}</Typography>
+                  <Box component="form" onSubmit={handleAddCategory} display="flex" flexDirection="column" gap={3} width={500}>
                     <TextField label={t("arabic_name")} size="small" required value={newCatNameAr} onChange={(e) => setNewCatNameAr(e.target.value)} />
                     <TextField label={t("english_name")} size="small" required value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
-                    <Button type="submit" variant="contained" sx={{ mt: 1 }}>{t("save_main_category")}</Button>
+                    
+                    {/* -----------------------------------------------------------------------صندوق الرفع والمعاينة الكبير المريح للعين - قسم رئيسي ----------------------------------------------------------*/}
+                    <Box
+                      component="label"
+                      sx={{
+                        border: `2px dashed ${darkMode ? "#f88400" : "#cbd5e1"}`,
+                        borderRadius: 3,
+                        height: 450,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        backgroundColor: darkMode ? "rgba(30, 41, 59, 0.5)" : "#f8fafc",
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: "#ffffff",
+                          backgroundColor: darkMode ? "rgba(105, 151, 224, 0.8)" : "#f1f5f9"
+                        }
+                      }}
+                    >
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setMainCatImage(file);
+                            setMainCatPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      {mainCatPreview ? (
+                        <Box 
+                          component="img" 
+                          src={mainCatPreview} 
+                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      ) : (
+                        <Box sx={{ textAlign: 'center', p: 2 }}>
+                          <AddIcon sx={{ fontSize: 35, color: '#e99905', mb: 0.5 }} />
+                          <Typography variant="body2" fontWeight="500">{t("upload_main_category_image")}</Typography>
+                          <Typography variant="caption" color="textSecondary" display="block">{t("click_to_select_file")}</Typography>
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Button type="submit" variant="contained" color="info" sx={{ mt: 1 }}>{t("save_main_category")}</Button>
                   </Box>
                 </Paper>
               </Grid>
 
-              {/* نموذج إضافة قسم فرعي */}
+              {/* --------------------------------------------------------------نموذج إضافة قسم فرعي ---------------------------------------------------------------------*/}
+
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 3, borderRadius: 4, height: '100%', background: darkMode ? "rgba(15, 26, 48, 0.95)" : "#ffffff" }}>
-                  <Typography variant="subtitle1" fontWeight="bold" mb={2} color="secondary">➕ {t("create_sub_category")}</Typography>
-                  <Box component="form" onSubmit={handleAddSubCategory} display="flex" flexDirection="column" gap={2}>
+                <Paper sx={{ p: 3, borderRadius: 4, height: '100%', background: darkMode ? "rgba(67, 65, 97, 0.95)" : "#ffffff" }}>
+                  <Typography variant="subtitle1" fontWeight="bold" mb={2} color="info">➕ {t("create_sub_category")}</Typography>
+                  <Box component="form" onSubmit={handleAddSubCategory} display="flex" flexDirection="column" gap={3} width={500}>
                     <FormControl size="small" required fullWidth>
                       <InputLabel>{t("select_parent_category")}</InputLabel>
                       <Select
                         value={selectedParentCat}
                         label={t("select_parent_category")}
+                        color="primary"
                         onChange={(e) => {
                           if (e.target.value !== undefined) {
                             setSelectedParentCat(e.target.value);
@@ -285,11 +374,12 @@ export default function AdminDashboard() {
                         }}
                       >
                         {categories.map((cat, idx) => {
-                          const actualId = cat.id; // بناءً على كونسول السيرفر الحقيقي المعرف هو id
+                          const actualId = cat.id;
                           return (
                             <MenuItem
                               key={actualId || `cat-option-${idx}`}
                               value={actualId}
+                              
                             >
                               {cat.name_ar || cat.name || "قسم بدون اسم"}
                             </MenuItem>
@@ -301,15 +391,70 @@ export default function AdminDashboard() {
                       <TextField label={t("arabic_name")} size="small" required fullWidth value={newSubCatNameAr} onChange={(e) => setNewSubCatNameAr(e.target.value)} />
                       <TextField label={t("english_name")} size="small" required fullWidth value={newSubCatName} onChange={(e) => setNewSubCatName(e.target.value)} />
                     </Box>
-                    <Button type="submit" variant="contained" color="secondary" sx={{ mt: 1 }}>{t("save_sub_category")}</Button>
+
+                    {/* ===================================================== صندوق الرفع والمعاينة الكبير المريح للعين - قسم فرعي ===================================================== */}
+                    <Box
+                      component="label"
+                      sx={{
+                        border: `2px dashed ${darkMode ? "#f88400" : "#cbd5e1"}`,
+                        borderRadius: 3,
+                        height: 450,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        backgroundColor: darkMode ? "rgba(30, 41, 59, 0.5)" : "#f8fafc",
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: '#ffffff',
+                          backgroundColor: darkMode ? "rgba(105, 151, 224, 0.8)" : "#f1f5f9"
+                        }
+                      }}
+                    >
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setSubCatImage(file);
+                            setSubCatPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      {subCatPreview ? (
+                        <Box 
+                          component="img" 
+                          src={subCatPreview} 
+                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      ) : (
+                        <Box sx={{ textAlign: 'center', p: 2 }}>
+                          <AddIcon sx={{ fontSize: 35, color: '#e99905', mb: 0.5 }} />
+                          <Typography variant="body2" fontWeight="500">{t("upload_sub_category_image")}</Typography>
+                          <Typography variant="caption" color="text.primary" display="block">{t("click_to_select_file")}</Typography>
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Button type="submit" variant="contained" color="info" sx={{ mt: 1 }}>{t("save_sub_category")}</Button>
+
+                    {/* ===================================================== صندوق الرفع والمعاينة الكبير المريح للعين - قسم فرعي ===================================================== */}
+
                   </Box>
                 </Paper>
               </Grid>
             </Grid>
+            
 
-            {/* جدول عرض شجرة الهيكل التنظيمي للأقسام المعتمد تماماً على كونسول السيرفر الحقيقي */}
+            {/* --------------------------------------------جدول عرض الهيكل التنظيمي للأقسام -------------------------------------------- */}
+
             <Fade in timeout={1100}>
-              <Paper sx={{ p: 3, borderRadius: 4, background: darkMode ? "rgba(15, 26, 48, 0.95)" : "#ffffff" }}>
+              <Paper sx={{ p: 3, borderRadius: 4, background: darkMode ? "rgba(67, 65, 97, 0.95)" : "#ffffff" }}>
                 <Typography variant="h6" fontWeight="bold" mb={2} color={darkMode ? "#667eea" : "#0f2b66"}>
                   {t("categories_structure")}
                 </Typography>
@@ -319,35 +464,41 @@ export default function AdminDashboard() {
                   <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ width: '30%' }}>{t("main_category")}</TableCell>
-                        <TableCell sx={{ width: '55%' }}>{t("sub_categories")}</TableCell>
+                        <TableCell sx={{ width: '35%' }}>{t("main_category")}</TableCell>
+                        <TableCell sx={{ width: '50%' }}>{t("sub_categories")}</TableCell>
                         <TableCell sx={{ width: '15%' }} align="center">{t("delete_main")}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {categories.map((category, index) => {
-                        const currentMainId = category.id; // قراءة المعرف من كونسول السيرفر (id)
+                        const currentMainId = category.id;
                         const mainKey = currentMainId ? `main-${currentMainId}` : `main-index-${index}`;
-
-                        // 🎯 قراءة المصفوفة الصحيحة تماماً كما ظهرت بالكونسول (subs)
                         const childSubs = category.subs || [];
 
                         return (
                           <TableRow key={mainKey} hover>
                             <TableCell>
-                              <Typography variant="body2" fontWeight="bold" color="primary.main">
-                                {category.name_ar || category.name}
-                              </Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                {category.name}
-                              </Typography>
+
+                              {/* -------------------------------------------------عرض صورة القسم الرئيسي بجانب الاسم ------------------------------------------------*/}
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                           
+                                <Box>
+                                  <Typography variant="body2" fontWeight="bold" color="text.primary">
+                                    {category.name_ar || category.name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {category.name}
+                                  </Typography>
+                                </Box>
+                              </Box>
                             </TableCell>
 
                             <TableCell>
                               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                 {childSubs && childSubs.length > 0 ? (
                                   childSubs.map((sub, subIndex) => {
-                                    const currentSubId = sub.id; // المعرف للفرعي هو id أيضاً
+                                    const currentSubId = sub.id;
                                     const subKey = currentSubId ? `sub-${currentSubId}` : `sub-index-${index}-${subIndex}`;
 
                                     return (
@@ -355,17 +506,16 @@ export default function AdminDashboard() {
                                         key={subKey}
                                         label={sub.name_ar || sub.name || t("sub_category")}
                                         size="small"
-                                        color="info"
+                                        color="text.primary"
                                         variant="outlined"
                                         onDelete={() => handleDeleteCategory(currentSubId)}
                                         sx={{ borderRadius: 1 }}
+                                      
                                       />
                                     );
                                   })
                                 ) : (
-                                  <Typography variant="caption" color="textSecondary" sx={{ fontStyle: 'italic' }}>
-
-                                  </Typography>
+                                null
                                 )}
                               </Box>
                             </TableCell>
