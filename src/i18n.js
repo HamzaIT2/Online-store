@@ -298,6 +298,10 @@ const dict = {
     admin_dashboard_subtitle: "نظرة عامة على الأداء والإحصائيات",
     user:"مستخدم",
     delete:"حذف",
+    upload_sub_category_image:"رفع صورة القسم الفرعي",
+    click_to_select_file:"اضغط هنا لاختيار ملف",
+    upload_main_category_image:"رفع صورة القسم الرئيسي",
+    confirm_delete_category:"تأكيد حذف القسم",
     //-------------------------------------------------------------------------الخصوصية-----------------------------------------------------------------
 
     privacy_title: "سياسة الخصوصية",
@@ -623,7 +627,7 @@ const dict = {
     field_province: "Province",
     field_city: "City",
     field_address: "Address",
-    field_images_upload: "Choose Images",
+    field_images_upload_description: "Choose Images",
     submit_product: "Publish Listing",
     profile_title: "Profile",
     profile_full_name: "Full Name",
@@ -798,6 +802,12 @@ const dict = {
     user:"User",
     delete:"Delete",
     no_subcategories:"No subcategories available",
+    upload_sub_category_image:"Upload Sub Category Image",
+    click_to_select_file:"Click to select file",
+    save_sub_category:"Save Sub Category",
+    upload_main_category_image:"Upload Main Category Image",
+    confirm_delete_category:"Confirm Delete Category",
+    admin_dashboard_title:"Admin Dashboard",
     //---------------------------------------------------------------------------------------------------------------------------------------------------------
     privacy_title: "Privacy Policy",
     privacy_subtitle:
